@@ -1,6 +1,8 @@
 package com.repair.ai.saas.module.ticket.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
 import com.repair.ai.saas.module.tenant.service.TenantService;
@@ -9,6 +11,7 @@ import com.repair.ai.saas.module.ticket.entity.TicketStatusLog;
 import com.repair.ai.saas.module.ticket.service.TicketService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
+import com.repair.ai.saas.security.RoleChecker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -39,6 +42,7 @@ public class TicketController {
             @RequestParam(required = false) Long technicianId,
             @RequestParam(required = false) String keyword,
             @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         var result = ticketService.listTickets(currentUser.getTenantId(), page, size,
                 status, priority, technicianId, keyword);
         return ApiResponse.success(Map.of(
@@ -52,6 +56,7 @@ public class TicketController {
     @GetMapping("/api/admin/tickets/{id}")
     public ApiResponse<Map<String, Object>> getTicket(@PathVariable Long id,
                                                        @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         RepairTicket ticket = ticketService.getTicketById(currentUser.getTenantId(), id);
         List<TicketStatusLog> logs = ticketService.getStatusLogs(currentUser.getTenantId(), id);
         return ApiResponse.success(Map.of(
@@ -64,6 +69,7 @@ public class TicketController {
     public ApiResponse<Map<String, Object>> createTicket(@Valid @RequestBody CreateTicketRequest req,
                                                           @CurrentUserInfo CurrentUser currentUser,
                                                           HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         RepairTicket ticket = ticketService.createTicket(currentUser.getTenantId(),
                 req.customerId, req.productType, req.faultType, req.faultDescription,
                 req.priority, req.scheduledTime);
@@ -81,6 +87,7 @@ public class TicketController {
     public ApiResponse<Void> updateTicket(@PathVariable Long id,
                                            @RequestBody UpdateTicketRequest req,
                                            @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         ticketService.updateTicket(currentUser.getTenantId(), id,
                 req.productType, req.faultType, req.faultDescription, req.priority, req.scheduledTime);
         return ApiResponse.success();
@@ -91,6 +98,7 @@ public class TicketController {
                                            @Valid @RequestBody AssignRequest req,
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         ticketService.assignTicket(currentUser.getTenantId(), id,
                 req.technicianId, req.scheduledTime, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -104,6 +112,7 @@ public class TicketController {
                                              @Valid @RequestBody AssignRequest req,
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         ticketService.reassignTicket(currentUser.getTenantId(), id,
                 req.technicianId, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -117,6 +126,7 @@ public class TicketController {
                                            @RequestBody(required = false) Map<String, String> body,
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         String remark = body != null ? body.get("remark") : null;
         ticketService.cancelTicket(currentUser.getTenantId(), id, currentUser.getUserId(), remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -129,6 +139,7 @@ public class TicketController {
     public ApiResponse<Void> closeTicket(@PathVariable Long id,
                                           @CurrentUserInfo CurrentUser currentUser,
                                           HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         ticketService.closeTicket(currentUser.getTenantId(), id, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), OperationType.CLOSE.name(), "TICKET",
@@ -139,6 +150,7 @@ public class TicketController {
     @GetMapping("/api/admin/tickets/{id}/status-logs")
     public ApiResponse<List<TicketStatusLog>> getStatusLogs(@PathVariable Long id,
                                                              @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         return ApiResponse.success(ticketService.getStatusLogs(currentUser.getTenantId(), id));
     }
 
@@ -166,6 +178,7 @@ public class TicketController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status,
             @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireTechnician(currentUser);
         var result = ticketService.listMyTickets(currentUser.getTenantId(),
                 currentUser.getUserId(), page, size, status);
         return ApiResponse.success(Map.of(
@@ -179,10 +192,11 @@ public class TicketController {
     @GetMapping("/api/technician/tickets/{id}")
     public ApiResponse<Map<String, Object>> getMyTicket(@PathVariable Long id,
                                                          @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireTechnician(currentUser);
         RepairTicket ticket = ticketService.getTicketById(currentUser.getTenantId(), id);
         // 校验是否分配给自己
         if (ticket.getTechnicianId() == null || !ticket.getTechnicianId().equals(currentUser.getUserId())) {
-            return ApiResponse.error("FORBIDDEN", "该工单未分配给您");
+            throw new BusinessException(ResultCode.FORBIDDEN, "该工单未分配给您");
         }
         List<TicketStatusLog> logs = ticketService.getStatusLogs(currentUser.getTenantId(), id);
         return ApiResponse.success(Map.of(
@@ -195,6 +209,7 @@ public class TicketController {
     public ApiResponse<Void> startProcess(@PathVariable Long id,
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
+        RoleChecker.requireTechnician(currentUser);
         ticketService.startProcess(currentUser.getTenantId(), id, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), OperationType.START_PROCESS.name(), "TICKET",
@@ -207,6 +222,7 @@ public class TicketController {
                                              @Valid @RequestBody CompleteRequest req,
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
+        RoleChecker.requireTechnician(currentUser);
         ticketService.completeTicket(currentUser.getTenantId(), id,
                 currentUser.getUserId(), req.repairResult, req.costNote, req.partsNote);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),

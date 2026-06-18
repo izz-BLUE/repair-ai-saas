@@ -7,6 +7,7 @@ import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.module.user.service.SysUserService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
+import com.repair.ai.saas.security.RoleChecker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -45,6 +46,7 @@ public class SysUserController {
     public ApiResponse<Map<String, Object>> createUser(@Valid @RequestBody CreateUserRequest req,
                                                         @CurrentUserInfo CurrentUser currentUser,
                                                         HttpServletRequest request) {
+        RoleChecker.requireAdmin(currentUser);
         SysUser user = sysUserService.createUser(currentUser.getTenantId(),
                 req.username, req.password, req.realName, req.phone, req.email, req.role);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -63,6 +65,7 @@ public class SysUserController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdmin(currentUser);
         var result = sysUserService.listUsers(currentUser.getTenantId(), page, size);
         return ApiResponse.success(Map.of(
                 "total", result.getTotal(),
@@ -75,6 +78,7 @@ public class SysUserController {
     @GetMapping("/api/admin/users/{id}")
     public ApiResponse<SysUser> getUser(@PathVariable Long id,
                                           @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdmin(currentUser);
         return ApiResponse.success(sysUserService.getUserById(currentUser.getTenantId(), id));
     }
 
@@ -83,6 +87,7 @@ public class SysUserController {
                                          @RequestBody UpdateUserRequest req,
                                          @CurrentUserInfo CurrentUser currentUser,
                                          HttpServletRequest request) {
+        RoleChecker.requireAdmin(currentUser);
         sysUserService.updateUser(currentUser.getTenantId(), id,
                 req.realName, req.phone, req.email, req.role);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -96,6 +101,7 @@ public class SysUserController {
                                                @RequestBody Map<String, String> body,
                                                @CurrentUserInfo CurrentUser currentUser,
                                                HttpServletRequest request) {
+        RoleChecker.requireAdmin(currentUser);
         String status = body.get("status");
         sysUserService.updateStatus(currentUser.getTenantId(), id, status);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -107,6 +113,7 @@ public class SysUserController {
     @GetMapping("/api/admin/technicians")
     public ApiResponse<List<Map<String, Object>>> listTechnicians(
             @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         var list = sysUserService.listTechnicians(currentUser.getTenantId());
         return ApiResponse.success(list.stream().map(u -> Map.of(
                 "id", (Object) u.getId(),
@@ -126,8 +133,8 @@ public class SysUserController {
                 "username", user.getUsername(),
                 "realName", user.getRealName(),
                 "role", user.getRole(),
-                "phone", user.getPhone(),
-                "email", user.getEmail()
+                "phone", user.getPhone() != null ? user.getPhone() : "",
+                "email", user.getEmail() != null ? user.getEmail() : ""
         ));
     }
 

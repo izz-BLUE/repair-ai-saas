@@ -7,6 +7,7 @@ import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
+import com.repair.ai.saas.security.RoleChecker;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class CustomerController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
             @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         var result = customerService.listCustomers(currentUser.getTenantId(), page, size, keyword);
         return ApiResponse.success(Map.of(
                 "total", result.getTotal(),
@@ -39,6 +41,7 @@ public class CustomerController {
     @GetMapping("/{id}")
     public ApiResponse<Customer> get(@PathVariable Long id,
                                        @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         return ApiResponse.success(customerService.getCustomerById(currentUser.getTenantId(), id));
     }
 
@@ -46,6 +49,7 @@ public class CustomerController {
     public ApiResponse<Map<String, Object>> create(@RequestBody CreateCustomerRequest req,
                                                     @CurrentUserInfo CurrentUser currentUser,
                                                     HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         Customer c = customerService.createOrGetCustomer(
                 currentUser.getTenantId(), req.name, req.phone, req.address, req.remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -63,6 +67,7 @@ public class CustomerController {
                                      @RequestBody UpdateCustomerRequest req,
                                      @CurrentUserInfo CurrentUser currentUser,
                                      HttpServletRequest request) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
         customerService.updateCustomer(currentUser.getTenantId(), id,
                 req.name, req.phone, req.address, req.remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
