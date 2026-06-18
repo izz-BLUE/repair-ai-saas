@@ -29,7 +29,7 @@ services:
     command: redis-server --appendonly yes
 
   qdrant:
-    image: qdrant/qdrant:v1.12.1
+    image: qdrant/qdrant:v1.18.0
     container_name: repair-ai-qdrant
     restart: unless-stopped
     ports:

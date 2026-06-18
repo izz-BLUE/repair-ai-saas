@@ -13,6 +13,7 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
+    FilterSelector,
     MatchValue,
     PointStruct,
     VectorParams,
@@ -141,12 +142,18 @@ def sync_item(
 # ---------- 删除 ----------
 
 def delete_item(tenant_id: int, item_id: int) -> bool:
-    """从 Qdrant 删除一条知识条目。成功返回 True。"""
+    """从 Qdrant 删除一条知识条目（按 filter 定位，防止误删）。成功返回 True。"""
     try:
         client = get_client()
+        delete_filter = Filter(
+            must=[
+                FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
+                FieldCondition(key="knowledge_item_id", match=MatchValue(value=item_id)),
+            ]
+        )
         client.delete(
             collection_name=settings.qdrant_collection,
-            points_selector=[item_id],
+            points_selector=FilterSelector(filter=delete_filter),
         )
         logger.info("Deleted item %d (tenant=%d) from Qdrant", item_id, tenant_id)
         return True
