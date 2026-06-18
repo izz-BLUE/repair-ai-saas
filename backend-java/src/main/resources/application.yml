@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: repair-ai-saas
+  profiles:
+    active: dev
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci1yZXBhaXItYWktc2Fhcy12MDEtZGV2ZWxvcG1lbnQ=
+    expiration-ms: 86400000
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.repair.ai.saas.module.*.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+springdoc:
+  api-docs:
+    enabled: false
