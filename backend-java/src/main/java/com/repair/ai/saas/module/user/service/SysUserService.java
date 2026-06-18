@@ -223,6 +223,21 @@ public class SysUserService {
         return tech;
     }
 
+    // ---------- 认证专用：查活跃用户 ----------
+
+    /**
+     * 用于 JwtAuthenticationFilter 实时校验。
+     * 返回 null 表示用户不存在 / 已禁用 / 已删除 / tenantId 不匹配。
+     */
+    public SysUser getActiveUserForAuth(Long userId, Long tenantId) {
+        return sysUserMapper.selectOne(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getId, userId)
+                        .eq(SysUser::getTenantId, tenantId)
+                        .eq(SysUser::getStatus, "ACTIVE")
+        );
+    }
+
     // ---------- 登录结果 DTO ----------
 
     public record LoginResult(String token, String tenantCode, Long userId,

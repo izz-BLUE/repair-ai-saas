@@ -1,5 +1,7 @@
 package com.repair.ai.saas.security;
 
+import com.repair.ai.saas.module.user.entity.SysUser;
+import com.repair.ai.saas.module.user.service.SysUserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final SysUserService sysUserService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -41,28 +44,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 提取 JWT
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"未登录\",\"data\":null,\"traceId\":null}");
+            writeUnauthorized(response, "未登录");
             return;
         }
 
         String token = authHeader.substring(7);
         if (!jwtTokenProvider.validateToken(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"Token无效或已过期\",\"data\":null,\"traceId\":null}");
+            writeUnauthorized(response, "Token无效或已过期");
             return;
         }
 
-        // 存入上下文
         var claims = jwtTokenProvider.parseToken(token);
         var tokenInfo = JwtTokenProvider.TokenInfo.fromClaims(claims);
+
+        // 实时校验：用户必须存在、未被禁用、未被删除、租户匹配
+        SysUser dbUser = sysUserService.getActiveUserForAuth(tokenInfo.userId, tokenInfo.tenantId);
+        if (dbUser == null) {
+            writeUnauthorized(response, "账号不存在或已被禁用");
+            return;
+        }
+
         UserContext.set(new CurrentUser(
-                tokenInfo.userId,
-                tokenInfo.tenantId,
-                tokenInfo.username,
-                tokenInfo.role
+                dbUser.getId(),
+                dbUser.getTenantId(),
+                dbUser.getUsername(),
+                dbUser.getRole()
         ));
 
         try {
@@ -74,5 +80,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicPath(String path) {
         return PUBLIC_PATHS.stream().anyMatch(p -> PATH_MATCHER.match(p, path));
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"" + message + "\",\"data\":null,\"traceId\":null}");
     }
 }

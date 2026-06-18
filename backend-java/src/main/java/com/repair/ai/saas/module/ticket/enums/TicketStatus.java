@@ -38,4 +38,19 @@ public enum TicketStatus {
     public boolean canTransitionTo(TicketStatus target) {
         return getAllowedTargets(this).contains(target);
     }
+
+    /**
+     * 从字符串解析状态，忽略大小写。
+     * 返回 null 表示不合法。
+     */
+    public static TicketStatus fromString(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return TicketStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

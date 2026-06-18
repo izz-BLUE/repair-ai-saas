@@ -8,6 +8,7 @@ import com.repair.ai.saas.module.customer.entity.Customer;
 import com.repair.ai.saas.module.customer.service.CustomerService;
 import com.repair.ai.saas.module.ticket.entity.RepairTicket;
 import com.repair.ai.saas.module.ticket.entity.TicketStatusLog;
+import com.repair.ai.saas.module.ticket.enums.TicketPriority;
 import com.repair.ai.saas.module.ticket.enums.TicketStatus;
 import com.repair.ai.saas.module.ticket.mapper.RepairTicketMapper;
 import com.repair.ai.saas.module.ticket.mapper.TicketStatusLogMapper;
@@ -53,6 +54,17 @@ public class TicketService {
                                      String productType, String faultType,
                                      String faultDescription, String priority,
                                      LocalDateTime scheduledTime) {
+        // 优先级校验
+        String normalizedPriority = "NORMAL";
+        if (priority != null && !priority.isBlank()) {
+            TicketPriority p = TicketPriority.fromString(priority);
+            if (p == null) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的优先级: " + priority + "，可选值: LOW/NORMAL/HIGH/URGENT");
+            }
+            normalizedPriority = p.name();
+        }
+
         Customer customer = customerService.getCustomerById(tenantId, customerId);
 
         RepairTicket ticket = new RepairTicket();
@@ -65,7 +77,7 @@ public class TicketService {
         ticket.setProductType(productType);
         ticket.setFaultType(faultType);
         ticket.setFaultDescription(faultDescription);
-        ticket.setPriority(priority != null ? priority.toUpperCase() : "NORMAL");
+        ticket.setPriority(normalizedPriority);
         ticket.setStatus(TicketStatus.PENDING.name());
         ticket.setScheduledTime(scheduledTime);
         ticketMapper.insert(ticket);
@@ -112,10 +124,20 @@ public class TicketService {
         LambdaQueryWrapper<RepairTicket> wrapper = new LambdaQueryWrapper<RepairTicket>()
                 .eq(RepairTicket::getTenantId, tenantId);
         if (status != null && !status.isBlank()) {
-            wrapper.eq(RepairTicket::getStatus, status.toUpperCase());
+            TicketStatus ts = TicketStatus.fromString(status);
+            if (ts == null) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的工单状态: " + status);
+            }
+            wrapper.eq(RepairTicket::getStatus, ts.name());
         }
         if (priority != null && !priority.isBlank()) {
-            wrapper.eq(RepairTicket::getPriority, priority.toUpperCase());
+            TicketPriority p = TicketPriority.fromString(priority);
+            if (p == null) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的优先级: " + priority);
+            }
+            wrapper.eq(RepairTicket::getPriority, p.name());
         }
         if (technicianId != null) {
             wrapper.eq(RepairTicket::getTechnicianId, technicianId);
@@ -164,7 +186,14 @@ public class TicketService {
         if (productType != null) ticket.setProductType(productType);
         if (faultType != null) ticket.setFaultType(faultType);
         if (faultDescription != null) ticket.setFaultDescription(faultDescription);
-        if (priority != null) ticket.setPriority(priority.toUpperCase());
+        if (priority != null) {
+            TicketPriority p = TicketPriority.fromString(priority);
+            if (p == null) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的优先级: " + priority + "，可选值: LOW/NORMAL/HIGH/URGENT");
+            }
+            ticket.setPriority(p.name());
+        }
         if (scheduledTime != null) ticket.setScheduledTime(scheduledTime);
         ticketMapper.updateById(ticket);
     }
@@ -316,7 +345,12 @@ public class TicketService {
                 .eq(RepairTicket::getTenantId, tenantId)
                 .eq(RepairTicket::getTechnicianId, technicianId);
         if (status != null && !status.isBlank()) {
-            wrapper.eq(RepairTicket::getStatus, status.toUpperCase());
+            TicketStatus ts = TicketStatus.fromString(status);
+            if (ts == null) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的工单状态: " + status);
+            }
+            wrapper.eq(RepairTicket::getStatus, ts.name());
         }
         wrapper.orderByDesc(RepairTicket::getCreatedAt);
         return ticketMapper.selectPage(pageParam, wrapper);
