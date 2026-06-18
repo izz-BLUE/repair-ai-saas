@@ -1,6 +1,6 @@
 # repair-ai-saas
 
-AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库模块已实现）。
+AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库 + AI 问答已实现）。
 
 ## 技术栈
 
@@ -46,9 +46,25 @@ mvn spring-boot:run
 
 Flyway 会在首次启动时自动建表。
 
-### 3. 服务端口
+### 3. 启动 AI 代理服务（可选）
+
+```bash
+cd agent-python
+pip install -e .
+
+# Mock 模式（无需 API Key，本地演示用）
+uvicorn app.main:app --host 0.0.0.0 --port 8090
+
+# Live 模式（需要 DeepSeek / OpenAI API Key）
+LLM_API_KEY=sk-xxx uvicorn app.main:app --host 0.0.0.0 --port 8090
+```
+
+不启动 agent-python 时，Java 后端会自动降级为 FAQ 摘要兜底回答。
+
+### 4. 服务端口
 
 - 后端：http://localhost:8080
+- AI 代理：http://localhost:8090
 
 ## API 测试流程
 
@@ -192,6 +208,7 @@ curl -X POST http://localhost:8080/api/public/TABC123/repair-requests \
 | POST | `/api/public/register` | 企业注册 |
 | POST | `/api/public/login` | 员工登录 |
 | POST | `/api/public/{tenantCode}/repair-requests` | 客户报修 |
+| POST | `/api/public/{tenantCode}/ai/chat` | AI 售后问答（V0.2） |
 
 ### 管理后台（需 ADMIN / DISPATCHER）
 
@@ -224,6 +241,8 @@ curl -X POST http://localhost:8080/api/public/TABC123/repair-requests \
 | GET | `/api/admin/knowledge-items/{id}` | 知识条目详情 |
 | PUT | `/api/admin/knowledge-items/{id}` | 编辑知识条目 |
 | PUT | `/api/admin/knowledge-items/{id}/status` | 知识条目状态变更 |
+| GET | `/api/admin/ai/conversations` | AI 对话列表（V0.2） |
+| GET | `/api/admin/ai/conversations/{id}` | AI 对话详情含消息（V0.2） |
 
 ### 师傅端（需 TECHNICIAN）
 
@@ -248,12 +267,20 @@ repair-ai-saas/
 ├── docker-compose.yml              # MySQL + Redis
 ├── docs/
 │   └── product.md                  # 产品文档
+├── agent-python/                   # AI 代理服务（FastAPI）
+│   ├── app/
+│   │   ├── main.py                 # FastAPI 入口
+│   │   ├── schemas.py              # 请求/响应 DTO
+│   │   ├── core/config.py          # 配置（环境变量）
+│   │   └── services/llm_service.py # LLM 调用 + Mock 模式
+│   ├── pyproject.toml
+│   └── README.md
 ├── backend-java/
 │   ├── pom.xml
 │   └── src/main/java/com/repair/ai/saas/
 │       ├── RepairAiSaasApplication.java
 │       ├── common/                  # ApiResponse, BusinessException, GlobalExceptionHandler
-│       ├── config/                  # MyBatisPlus, WebMvc, Redis 配置
+│       ├── config/                  # MyBatisPlus, WebMvc, Redis, AiConfig 配置
 │       ├── security/                # JWT, UserContext, @CurrentUserInfo
 │       ├── dto/                     # PageResponse
 │       └── module/
@@ -264,11 +291,12 @@ repair-ai-saas/
 │           │   └── enums/           # TicketStatus, TicketPriority
 │           ├── knowledge/           # FAQ 知识库（V0.2）
 │           │   └── enums/           # KnowledgeStatus
+│           ├── ai/                  # AI 问答（V0.2）
 │           └── operation/           # 操作日志
 │               └── enums/           # OperationType
 ```
 
-## 数据库（6 张表）
+## 数据库（10 张表）
 
 | 表名 | 说明 |
 |------|------|
@@ -280,6 +308,8 @@ repair-ai-saas/
 | operation_log | 操作日志 |
 | knowledge_base | 知识库（V0.2） |
 | knowledge_item | 知识条目（V0.2） |
+| ai_conversation | AI 对话记录（V0.2） |
+| ai_message | AI 消息记录（V0.2） |
 
 所有业务表含 `tenant_id`、`created_at`、`updated_at`，核心表含 `deleted` 逻辑删除。
 
@@ -298,7 +328,7 @@ repair-ai-saas/
 
 ## V0.1 未完成事项
 
-- [ ] AI 问答（V0.2）
+- [x] AI 问答（V0.2）✅ 已实现 FAQ 检索 + AI 回答 + 兜底
 - [x] 知识库管理（V0.2）✅ 已实现 FAQ 知识库 CRUD
 - [ ] 前端管理后台（V0.2）
 - [ ] 移动端/师傅端 H5（V0.3）
