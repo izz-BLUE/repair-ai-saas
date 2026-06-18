@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-java:
+    name: Java Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Compile
+        run: mvn -f backend-java/pom.xml clean compile
+
+      - name: Run tests
+        run: mvn -f backend-java/pom.xml test
+
+      - name: Verify Flyway migrations exist
+        run: |
+          for f in V1__init_schema.sql V2__add_customer_unique_constraint.sql V3__add_knowledge_tables.sql V4__add_ai_tables.sql; do
+            if [ ! -f "backend-java/src/main/resources/db/migration/$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+            echo "OK: $f"
+          done
+
+  agent-python:
+    name: Python Agent
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: agent-python/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: agent-python
+        run: pip install -e ".[test]"
+
+      - name: Compile check
+        working-directory: agent-python
+        run: python -m compileall app
+
+      - name: Import check
+        working-directory: agent-python
+        run: python -c "from app.main import app; print(app.title)"
+
+      - name: Run tests
+        working-directory: agent-python
+        run: pytest tests/ -v

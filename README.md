@@ -71,6 +71,35 @@ LLM_API_KEY=sk-xxx EMBEDDING_API_KEY=sk-xxx uvicorn app.main:app --host 0.0.0.0 
 - AI 代理：http://localhost:8090
 - Qdrant：http://localhost:6333
 
+## 测试
+
+### Java 单元测试
+
+```bash
+mvn -f backend-java/pom.xml test
+```
+
+测试内容：TicketStatus 状态机、TicketPriority 解析、KnowledgeStatus 解析、RoleChecker 权限校验。均为纯逻辑测试，不需要 MySQL / Redis / Qdrant。
+
+### Python 测试
+
+```bash
+cd agent-python
+pip install -e ".[test]"
+pytest tests/ -v
+```
+
+测试内容：Mock Embedding 的确定性、维度、L2 归一化。不需要真实 Qdrant 或 API Key。
+
+## CI
+
+GitHub Actions 自动运行：
+
+- **backend-java** job：Java 17 + Maven 编译 + 单元测试 + Flyway 迁移文件检查
+- **agent-python** job：Python 3.11 + 安装依赖 + 编译检查 + 导入检查 + pytest
+
+每次 push/PR 到 main 自动触发，详见 `.github/workflows/ci.yml`。
+
 ## API 测试流程
 
 ### 1. 注册企业 → 获取 JWT
