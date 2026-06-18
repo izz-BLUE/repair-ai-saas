@@ -5,7 +5,8 @@ import com.repair.ai.saas.module.ai.service.AiService;
 import com.repair.ai.saas.module.ai.service.AiService.AiChatResult;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,15 +26,9 @@ public class AiPublicController {
     @PostMapping("/{tenantCode}/ai/chat")
     public ApiResponse<Map<String, Object>> chat(
             @PathVariable String tenantCode,
-            @RequestBody AiChatRequest req,
-            HttpServletRequest request) {
+            @Valid @RequestBody AiChatRequest req) {
         // 根据 tenantCode 找租户
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
-
-        // 参数校验
-        if (req.question == null || req.question.isBlank()) {
-            return ApiResponse.error("VALIDATION_ERROR", "问题不能为空");
-        }
 
         AiChatResult result = aiService.chat(
                 tenant.getId(),
@@ -55,7 +50,7 @@ public class AiPublicController {
     }
 
     public record AiChatRequest(
-            String question,
+            @NotBlank(message = "问题不能为空") String question,
             String customerName,
             String customerPhone,
             String productType,

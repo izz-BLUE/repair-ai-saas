@@ -31,6 +31,10 @@ public class AiAdminController {
             @RequestParam(defaultValue = "20") int size,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        // 基础分页限制
+        if (page < 1) page = 1;
+        if (size < 1) size = 1;
+        if (size > 100) size = 100;
         var result = aiService.listConversations(currentUser.getTenantId(), page, size);
         return ApiResponse.success(Map.of(
                 "total", result.getTotal(),

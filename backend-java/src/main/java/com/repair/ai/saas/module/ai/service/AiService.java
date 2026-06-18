@@ -131,11 +131,11 @@ public class AiService {
     // ---------- 查询接口 ----------
 
     public AiConversation getConversationById(Long tenantId, Long id) {
-        AiConversation conv = conversationMapper.selectById(id);
-        if (conv == null || !conv.getTenantId().equals(tenantId)) {
-            return null;
-        }
-        return conv;
+        return conversationMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiConversation>()
+                        .eq(AiConversation::getTenantId, tenantId)
+                        .eq(AiConversation::getId, id)
+        );
     }
 
     public List<AiMessage> getMessages(Long tenantId, Long conversationId) {
