@@ -15,7 +15,13 @@ public enum OperationType {
     UPDATE_USER("编辑员工"),
     UPDATE_USER_STATUS("启用/禁用员工"),
     CREATE_CUSTOMER("创建客户"),
-    UPDATE_CUSTOMER("编辑客户");
+    UPDATE_CUSTOMER("编辑客户"),
+    CREATE_KNOWLEDGE_BASE("创建知识库"),
+    UPDATE_KNOWLEDGE_BASE("编辑知识库"),
+    UPDATE_KNOWLEDGE_BASE_STATUS("知识库状态变更"),
+    CREATE_KNOWLEDGE_ITEM("创建知识条目"),
+    UPDATE_KNOWLEDGE_ITEM("编辑知识条目"),
+    UPDATE_KNOWLEDGE_ITEM_STATUS("知识条目状态变更");
 
     private final String label;
 

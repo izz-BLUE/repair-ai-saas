@@ -1,6 +1,6 @@
 # repair-ai-saas
 
-AI 售后维修工单 SaaS —— V0.1 内部演示版本。
+AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库模块已实现）。
 
 ## 技术栈
 
@@ -214,6 +214,16 @@ curl -X POST http://localhost:8080/api/public/TABC123/repair-requests \
 | GET | `/api/admin/users` | 员工列表 |
 | PUT | `/api/admin/users/{id}` | 编辑员工 |
 | PUT | `/api/admin/users/{id}/status` | 启用/禁用 |
+| POST | `/api/admin/knowledge-bases` | 创建知识库 |
+| GET | `/api/admin/knowledge-bases` | 知识库列表 |
+| GET | `/api/admin/knowledge-bases/{id}` | 知识库详情 |
+| PUT | `/api/admin/knowledge-bases/{id}` | 编辑知识库 |
+| PUT | `/api/admin/knowledge-bases/{id}/status` | 知识库状态变更 |
+| POST | `/api/admin/knowledge-items` | 创建知识条目 |
+| GET | `/api/admin/knowledge-items` | 知识条目列表（支持 keyword 搜索） |
+| GET | `/api/admin/knowledge-items/{id}` | 知识条目详情 |
+| PUT | `/api/admin/knowledge-items/{id}` | 编辑知识条目 |
+| PUT | `/api/admin/knowledge-items/{id}/status` | 知识条目状态变更 |
 
 ### 师傅端（需 TECHNICIAN）
 
@@ -252,6 +262,8 @@ repair-ai-saas/
 │           ├── customer/            # 客户管理
 │           ├── ticket/              # 工单（核心）
 │           │   └── enums/           # TicketStatus, TicketPriority
+│           ├── knowledge/           # FAQ 知识库（V0.2）
+│           │   └── enums/           # KnowledgeStatus
 │           └── operation/           # 操作日志
 │               └── enums/           # OperationType
 ```
@@ -266,6 +278,8 @@ repair-ai-saas/
 | repair_ticket | 维修工单 |
 | ticket_status_log | 工单状态流转日志 |
 | operation_log | 操作日志 |
+| knowledge_base | 知识库（V0.2） |
+| knowledge_item | 知识条目（V0.2） |
 
 所有业务表含 `tenant_id`、`created_at`、`updated_at`，核心表含 `deleted` 逻辑删除。
 
@@ -285,7 +299,7 @@ repair-ai-saas/
 ## V0.1 未完成事项
 
 - [ ] AI 问答（V0.2）
-- [ ] 知识库管理（V0.2）
+- [x] 知识库管理（V0.2）✅ 已实现 FAQ 知识库 CRUD
 - [ ] 前端管理后台（V0.2）
 - [ ] 移动端/师傅端 H5（V0.3）
 - [ ] 文件/图片上传（V0.3）
