@@ -16,6 +16,21 @@ class Settings(BaseSettings):
     def mock_mode(self) -> bool:
         return not self.llm_api_key
 
+    # Qdrant 配置
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "repair_faq_items"
+
+    # Embedding 配置（OpenAI 兼容接口）
+    embedding_api_key: str = ""
+    embedding_base_url: str = "https://api.openai.com/v1"
+    embedding_model: str = "text-embedding-3-small"
+    embedding_dimension: int = 1536
+
+    # 当 embedding_api_key 为空时，使用 mock embedding
+    @property
+    def embedding_mock_mode(self) -> bool:
+        return not self.embedding_api_key
+
     # 服务端口
     agent_port: int = 8090
 

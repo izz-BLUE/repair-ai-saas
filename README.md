@@ -1,6 +1,6 @@
 # repair-ai-saas
 
-AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库 + AI 问答已实现）。
+AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库 + AI 问答 + 向量检索已实现）。
 
 ## 技术栈
 
@@ -9,6 +9,7 @@ AI 售后维修工单 SaaS —— V0.1 内部演示版本（V0.2 知识库 + AI 
 | 后端框架 | Spring Boot 3.2 |
 | ORM | MyBatis-Plus 3.5 |
 | 数据库 | MySQL 8.0 |
+| 向量库 | Qdrant (V0.2) |
 | 缓存 | Redis 7 |
 | 迁移 | Flyway |
 | 认证 | JWT (jjwt 0.12) |
@@ -57,14 +58,18 @@ uvicorn app.main:app --host 0.0.0.0 --port 8090
 
 # Live 模式（需要 DeepSeek / OpenAI API Key）
 LLM_API_KEY=sk-xxx uvicorn app.main:app --host 0.0.0.0 --port 8090
+
+# Live 模式 + 真实 Embedding（需要 Embedding API Key）
+LLM_API_KEY=sk-xxx EMBEDDING_API_KEY=sk-xxx uvicorn app.main:app --host 0.0.0.0 --port 8090
 ```
 
-不启动 agent-python 时，Java 后端会自动降级为 FAQ 摘要兜底回答。
+不启动 agent-python 时，Java 后端会自动降级为 SQL LIKE FAQ 摘要兜底回答。
 
 ### 4. 服务端口
 
 - 后端：http://localhost:8080
 - AI 代理：http://localhost:8090
+- Qdrant：http://localhost:6333
 
 ## API 测试流程
 
@@ -241,6 +246,7 @@ curl -X POST http://localhost:8080/api/public/TABC123/repair-requests \
 | GET | `/api/admin/knowledge-items/{id}` | 知识条目详情 |
 | PUT | `/api/admin/knowledge-items/{id}` | 编辑知识条目 |
 | PUT | `/api/admin/knowledge-items/{id}/status` | 知识条目状态变更 |
+| POST | `/api/admin/knowledge-items/sync-vectors` | 批量同步向量（V0.2） |
 | GET | `/api/admin/ai/conversations` | AI 对话列表（V0.2） |
 | GET | `/api/admin/ai/conversations/{id}` | AI 对话详情含消息（V0.2） |
 
@@ -310,6 +316,7 @@ repair-ai-saas/
 | knowledge_item | 知识条目（V0.2） |
 | ai_conversation | AI 对话记录（V0.2） |
 | ai_message | AI 消息记录（V0.2） |
+| Qdrant `repair_faq_items` | FAQ 向量索引（V0.2） |
 
 所有业务表含 `tenant_id`、`created_at`、`updated_at`，核心表含 `deleted` 逻辑删除。
 

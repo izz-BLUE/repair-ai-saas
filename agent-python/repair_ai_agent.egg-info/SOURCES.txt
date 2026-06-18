@@ -7,6 +7,7 @@ app/core/__init__.py
 app/core/config.py
 app/services/__init__.py
 app/services/llm_service.py
+app/services/vector_service.py
 repair_ai_agent.egg-info/PKG-INFO
 repair_ai_agent.egg-info/SOURCES.txt
 repair_ai_agent.egg-info/dependency_links.txt

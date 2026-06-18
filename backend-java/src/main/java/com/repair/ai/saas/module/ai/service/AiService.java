@@ -4,7 +4,6 @@ import com.repair.ai.saas.module.ai.entity.AiConversation;
 import com.repair.ai.saas.module.ai.entity.AiMessage;
 import com.repair.ai.saas.module.ai.mapper.AiConversationMapper;
 import com.repair.ai.saas.module.ai.mapper.AiMessageMapper;
-import com.repair.ai.saas.module.ai.service.AiClient.FaqContext;
 import com.repair.ai.saas.module.knowledge.entity.KnowledgeItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * AI 问答核心编排服务。
@@ -39,50 +37,42 @@ public class AiService {
                              String source) {
         String traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
-        // 1. 检索 FAQ
-        List<KnowledgeItem> matchedItems = faqSearchService.search(
-                tenantId, question, productType, faultType);
-        int matchedCount = matchedItems.size();
-
-        log.info("AI chat: tenantId={}, question='{}', matchedFAQ={}, traceId={}",
-                tenantId, question, matchedCount, traceId);
+        log.info("AI chat: tenantId={}, question='{}', traceId={}", tenantId, question, traceId);
 
         String answer;
         String model;
         boolean shouldCreateTicket;
+        int matchedCount;
 
-        if (matchedCount == 0) {
-            // 2. 无 FAQ 命中 → 不调用 AI
-            answer = NO_FAQ_ANSWER;
-            model = null;
-            shouldCreateTicket = true;
+        // 1. 优先调用 Python AI 服务（Python 端负责向量检索 + LLM）
+        var aiResponse = aiClient.chatWithVectorSearch(
+                question, tenantId, productType, faultType, 5, traceId);
+
+        if (aiResponse != null) {
+            // Python 服务正常 → 使用其返回结果
+            answer = aiResponse.getAnswer();
+            model = aiResponse.getModel();
+            shouldCreateTicket = aiResponse.isShouldCreateTicket();
+            matchedCount = aiResponse.getMatchedItemCount();
         } else {
-            // 3. 有 FAQ 命中 → 调用 Python AI 服务
-            List<FaqContext> contexts = matchedItems.stream()
-                    .map(item -> {
-                        FaqContext ctx = new FaqContext();
-                        ctx.setTitle(item.getTitle());
-                        ctx.setQuestion(item.getQuestion());
-                        ctx.setAnswer(item.getAnswer());
-                        return ctx;
-                    })
-                    .collect(Collectors.toList());
+            // 2. Python 服务不可用 → 降级：Java SQL LIKE 搜索 + FAQ 摘要
+            log.warn("Python AI service unavailable, falling back to SQL LIKE search");
+            List<KnowledgeItem> matchedItems = faqSearchService.search(
+                    tenantId, question, productType, faultType);
+            matchedCount = matchedItems.size();
 
-            var aiResponse = aiClient.chat(question, contexts, tenantId, traceId);
-
-            if (aiResponse != null) {
-                answer = aiResponse.getAnswer();
-                model = aiResponse.getModel();
-                shouldCreateTicket = aiResponse.isShouldCreateTicket();
+            if (matchedCount == 0) {
+                answer = NO_FAQ_ANSWER;
+                model = null;
+                shouldCreateTicket = true;
             } else {
-                // 4. AI 服务不可用 → 兜底：返回 FAQ 摘要
                 answer = buildFallbackAnswer(matchedItems);
                 model = FALLBACK_MODEL;
                 shouldCreateTicket = false;
             }
         }
 
-        // 5. 落库
+        // 3. 落库
         AiConversation conv = new AiConversation();
         conv.setTenantId(tenantId);
         conv.setCustomerPhone(customerPhone);

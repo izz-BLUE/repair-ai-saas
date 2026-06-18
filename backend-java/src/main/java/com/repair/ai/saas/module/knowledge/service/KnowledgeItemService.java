@@ -4,20 +4,26 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.ResultCode;
+import com.repair.ai.saas.module.ai.service.AiClient;
 import com.repair.ai.saas.module.knowledge.entity.KnowledgeBase;
 import com.repair.ai.saas.module.knowledge.entity.KnowledgeItem;
 import com.repair.ai.saas.module.knowledge.enums.KnowledgeStatus;
 import com.repair.ai.saas.module.knowledge.mapper.KnowledgeBaseMapper;
 import com.repair.ai.saas.module.knowledge.mapper.KnowledgeItemMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KnowledgeItemService {
 
     private final KnowledgeItemMapper knowledgeItemMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final AiClient aiClient;
 
     public KnowledgeItem create(Long tenantId, Long knowledgeBaseId, String title,
                                 String question, String answer, String productType,
@@ -37,6 +43,10 @@ public class KnowledgeItemService {
         item.setSortOrder(sortOrder != null ? sortOrder : 0);
         item.setStatus(KnowledgeStatus.ACTIVE.name());
         knowledgeItemMapper.insert(item);
+
+        // 同步到向量库（fire-and-forget）
+        syncToVectorStore(tenantId, item);
+
         return item;
     }
 
@@ -86,6 +96,9 @@ public class KnowledgeItemService {
         if (keywords != null) item.setKeywords(keywords);
         if (sortOrder != null) item.setSortOrder(sortOrder);
         knowledgeItemMapper.updateById(item);
+
+        // 同步到向量库（fire-and-forget）
+        syncToVectorStore(tenantId, item);
     }
 
     public void updateStatus(Long tenantId, Long id, String status) {
@@ -93,6 +106,33 @@ public class KnowledgeItemService {
         KnowledgeItem item = getById(tenantId, id);
         item.setStatus(ks.name());
         knowledgeItemMapper.updateById(item);
+
+        // 同步到向量库（fire-and-forget）
+        syncToVectorStore(tenantId, item);
+    }
+
+    /**
+     * 获取当前租户所有 ACTIVE 知识条目（供批量同步使用）。
+     */
+    public List<KnowledgeItem> listAllActive(Long tenantId) {
+        return knowledgeItemMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeItem>()
+                        .eq(KnowledgeItem::getTenantId, tenantId)
+                        .eq(KnowledgeItem::getStatus, KnowledgeStatus.ACTIVE.name())
+        );
+    }
+
+    // ---------- 内部方法 ----------
+
+    private void syncToVectorStore(Long tenantId, KnowledgeItem item) {
+        try {
+            aiClient.syncKnowledgeItem(
+                    tenantId, item.getId(), item.getKnowledgeBaseId(),
+                    item.getTitle(), item.getQuestion(), item.getAnswer(),
+                    item.getProductType(), item.getFaultType(), item.getStatus());
+        } catch (Exception e) {
+            log.warn("Failed to sync knowledge item {} to vector store: {}", item.getId(), e.getMessage());
+        }
     }
 
     private void validateKnowledgeBase(Long tenantId, Long knowledgeBaseId) {
