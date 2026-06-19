@@ -179,7 +179,7 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/common/profile` | 当前用户信息 |
-| PUT | `/api/common/password` | 修改密码 |
+| PUT | `/api/common/password` | 修改密码（body: `oldPassword`, `newPassword`），修改后前端应清除 token 并跳转登录 |
 
 ---
 

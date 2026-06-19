@@ -1,6 +1,7 @@
 package com.repair.ai.saas.module.tenant.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.ResultCode;
@@ -148,11 +149,12 @@ public class TenantService {
         return true;
     }
 
-    /** 更新租户（平台管理用，可修改所有字段含到期时间） */
+    /** 更新租户（平台管理用，可修改所有字段含到期时间，支持将 nullable 字段设为 null） */
     public void updateTenantByPlatform(Long tenantId, String name, String contactName,
                                        String contactPhone, String address,
                                        Integer maxKnowledgeBases, Integer maxDocuments,
-                                       Integer maxAiDailyCalls, LocalDateTime expiredAt) {
+                                       Integer maxAiDailyCalls, Object expiredAt,
+                                       java.util.Set<String> providedFields) {
         Tenant tenant = tenantMapper.selectById(tenantId);
         if (tenant == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "租户不存在");
@@ -160,16 +162,30 @@ public class TenantService {
         if ("PLATFORM".equals(tenant.getTenantCode())) {
             throw new BusinessException(ResultCode.VALIDATION_ERROR, "不能修改平台租户");
         }
+        // 非 null 字段直接更新
         if (name != null) tenant.setName(name);
         if (contactName != null) tenant.setContactName(contactName);
         if (contactPhone != null) tenant.setContactPhone(contactPhone);
         if (address != null) tenant.setAddress(address);
-        if (maxKnowledgeBases != null) tenant.setMaxKnowledgeBases(maxKnowledgeBases);
-        if (maxDocuments != null) tenant.setMaxDocuments(maxDocuments);
-        if (maxAiDailyCalls != null) tenant.setMaxAiDailyCalls(maxAiDailyCalls);
-        // expiredAt 支持显式设置为 null（清除到期时间）或设置新值
-        tenant.setExpiredAt(expiredAt);
         tenantMapper.updateById(tenant);
+
+        // nullable 字段：仅对 JSON 中显式出现的字段执行 SET（含 null 值）
+        LambdaUpdateWrapper<Tenant> wrapper = new LambdaUpdateWrapper<Tenant>()
+                .eq(Tenant::getId, tenantId);
+        if (providedFields.contains("maxKnowledgeBases")) {
+            wrapper.set(Tenant::getMaxKnowledgeBases, maxKnowledgeBases);
+        }
+        if (providedFields.contains("maxDocuments")) {
+            wrapper.set(Tenant::getMaxDocuments, maxDocuments);
+        }
+        if (providedFields.contains("maxAiDailyCalls")) {
+            wrapper.set(Tenant::getMaxAiDailyCalls, maxAiDailyCalls);
+        }
+        if (providedFields.contains("expiredAt")) {
+            LocalDateTime expired = (expiredAt instanceof LocalDateTime) ? (LocalDateTime) expiredAt : null;
+            wrapper.set(Tenant::getExpiredAt, expired);
+        }
+        tenantMapper.update(null, wrapper);
     }
 
     /** 启用租户 */

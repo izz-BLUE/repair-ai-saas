@@ -1,6 +1,8 @@
 package com.repair.ai.saas.module.platform.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.PasswordGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.user.service.SysUserService;
@@ -12,7 +14,6 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -26,9 +27,6 @@ public class PlatformTenantController {
 
     private final TenantService tenantService;
     private final SysUserService sysUserService;
-
-    private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * 租户列表（分页，排除 PLATFORM 租户）
@@ -62,7 +60,7 @@ public class PlatformTenantController {
 
         // 2. 创建管理员账号（随机密码）
         String adminUsername = "admin";
-        String adminPassword = generateRandomPassword(12);
+        String adminPassword = PasswordGenerator.generate(12);
         var admin = sysUserService.createUser(
                 tenant.getId(), adminUsername, adminPassword,
                 req.contactName, req.contactPhone, null, "ADMIN"
@@ -91,18 +89,42 @@ public class PlatformTenantController {
 
     /**
      * 编辑租户（平台管理员可修改基础信息、限额和到期时间）
+     * 使用 @RequestBody Map 接收原始 JSON，区分"未传字段"和"显式传 null"。
+     * 仅对 JSON 中出现的 nullable 字段执行 SET（含 null），未出现的字段保持不变。
      */
+    @SuppressWarnings("unchecked")
     @PutMapping("/{id}")
     public ApiResponse<Void> updateTenant(@PathVariable Long id,
-                                          @RequestBody UpdateTenantRequest req,
+                                          @RequestBody java.util.Map<String, Object> body,
                                           @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireSuperAdmin(currentUser);
+
+        // 解析 expiredAt：Jackson 将 ISO 字符串反序列化为 String，需手动转 LocalDateTime
+        LocalDateTime expiredAt = null;
+        if (body.containsKey("expiredAt") && body.get("expiredAt") != null) {
+            expiredAt = LocalDateTime.parse((String) body.get("expiredAt"));
+        }
+        boolean clearExpiredAt = body.containsKey("expiredAt") && body.get("expiredAt") == null;
+
         tenantService.updateTenantByPlatform(
-                id, req.name, req.contactName, req.contactPhone, req.address,
-                req.maxKnowledgeBases, req.maxDocuments, req.maxAiDailyCalls,
-                req.expiredAt
+                id,
+                (String) body.get("name"),
+                (String) body.get("contactName"),
+                (String) body.get("contactPhone"),
+                (String) body.get("address"),
+                body.containsKey("maxKnowledgeBases") ? toInteger(body.get("maxKnowledgeBases")) : null,
+                body.containsKey("maxDocuments") ? toInteger(body.get("maxDocuments")) : null,
+                body.containsKey("maxAiDailyCalls") ? toInteger(body.get("maxAiDailyCalls")) : null,
+                clearExpiredAt ? null : expiredAt,
+                body.keySet()
         );
         return ApiResponse.success();
+    }
+
+    private static Integer toInteger(Object val) {
+        if (val == null) return null;
+        if (val instanceof Number) return ((Number) val).intValue();
+        return Integer.parseInt(val.toString());
     }
 
     /**
@@ -135,19 +157,9 @@ public class PlatformTenantController {
             @PathVariable Long id,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireSuperAdmin(currentUser);
-        String newPassword = generateRandomPassword(12);
+        String newPassword = PasswordGenerator.generate(12);
         sysUserService.resetAdminPassword(id, newPassword);
         return ApiResponse.success(Map.of("newPassword", newPassword));
-    }
-
-    // ==================== 工具方法 ====================
-
-    private static String generateRandomPassword(int length) {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(PASSWORD_CHARS.length())));
-        }
-        return sb.toString();
     }
 
     // ==================== DTO ====================
