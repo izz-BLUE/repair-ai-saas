@@ -2,7 +2,7 @@
 
 面向小型售后维修团队的 **AI 工单管理 SaaS**，支持多租户、RBAC 权限、工单状态机、FAQ 知识库、Qdrant 向量检索、AI 智能问答。
 
-> Java 后端 + Python AI 服务双架构，Python 不可用时自动降级为 SQL 兜底。
+> Java 后端 + Python AI 服务双架构，附带 React 管理后台。Python 不可用时自动降级为 SQL 兜底。
 
 ## 业务场景
 
@@ -63,6 +63,7 @@
 |------|------|------|
 | Java 后端 | Spring Boot 3.2 + MyBatis-Plus 3.5 | 业务主服务：工单、客户、权限、知识库管理 |
 | Python Agent | FastAPI + OpenAI SDK | AI 服务：Embedding、向量检索、LLM 问答 |
+| 管理后台 | React 18 + TypeScript + Ant Design 5 | 后台管理 UI：知识库、文档、AI 对话 |
 | MySQL 8.0 | Flyway 迁移 | 业务数据持久化（11 张表） |
 | Redis 7 | Spring Data Redis | 缓存 |
 | Qdrant | v1.18.0 | FAQ 向量索引（COSINE 距离） |
@@ -92,6 +93,11 @@ agent-python/app/
 └── services/
     ├── llm_service.py      # LLM 调用 + Mock 模式
     └── vector_service.py   # Qdrant 客户端 + Embedding + 搜索
+
+frontend/src/
+├── api/             # Axios 封装 + API 函数
+├── layouts/         # AdminLayout（Sider 布局）
+└── pages/           # 登录、仪表盘、知识库、条目、文档、AI 对话
 ```
 
 ## 本地启动
@@ -129,6 +135,18 @@ LLM_API_KEY=sk-xxx EMBEDDING_API_KEY=sk-xxx uvicorn app.main:app --host 0.0.0.0 
 ```
 
 > 不启动 agent-python 时，Java 后端自动降级为 SQL LIKE FAQ 摘要兜底回答。
+
+### 4. 启动前端管理后台（可选）
+
+```bash
+cd frontend
+npm install
+npm run dev
+# http://localhost:3000
+# 代理 /api → http://localhost:8080
+```
+
+> 需要先启动 Java 后端，前端通过 Vite proxy 转发 API 请求。
 
 ## 测试与 CI
 

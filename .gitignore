@@ -28,3 +28,6 @@ __pycache__/
 
 # Uploads
 data/
+
+# Frontend build
+frontend/dist/
