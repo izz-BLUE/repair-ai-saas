@@ -223,6 +223,7 @@ pytest tests/ -v
 | V0.3.1 | 前端管理后台（React + Ant Design 5） | ✅ |
 | V0.3.2 | 企业服务门户（AI 客服 / 报修 / 查询占位） | ✅ |
 | V0.3.3 | 商业化交付（租户配置、平台管理、门户品牌化、部署文档） | ✅ |
+| V0.3.4 | 商业化安全（到期拦截、随机密码、AI 限额、修改密码、知识库限额） | ✅ |
 | V0.4 | 师傅端 H5 / 限流 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
@@ -273,7 +274,13 @@ pytest tests/ -v
 
 `POST /api/public/{tenantCode}/repair-requests` 无需认证即可访问。当前演示版本未做 IP 限流。生产环境需补充：IP 限流、验证码、单租户频率限制。
 
-**默认平台管理员账号：** 企业编码 `PLATFORM`，用户名 `superadmin`，密码 `Admin@2024`。**生产部署后务必立即修改密码。**
+**默认平台管理员账号：** 企业编码 `PLATFORM`，用户名 `superadmin`，密码 `Admin@2024`。**生产部署后务必立即修改密码。** 详见 [部署文档安全检查清单](docs/deployment.md#生产部署安全检查清单)。
+
+**V0.3.4 安全增强：**
+- 租户到期（expired_at）全链路拦截：登录 + JWT + 公开接口 + 门户
+- 创建租户和重置密码均使用随机临时密码（SecureRandom）
+- AI 日调用量限额（max_ai_daily_calls）
+- 知识库数量限额（max_knowledge_bases）
 
 ## License
 

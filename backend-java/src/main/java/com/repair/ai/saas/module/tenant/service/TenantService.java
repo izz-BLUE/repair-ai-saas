@@ -9,6 +9,7 @@ import com.repair.ai.saas.module.tenant.mapper.TenantMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 
@@ -108,7 +109,9 @@ public class TenantService {
             throw new BusinessException(ResultCode.NOT_FOUND, "企业不存在");
         }
         boolean portalOk = "ACTIVE".equals(tenant.getStatus())
-                && Boolean.TRUE.equals(tenant.getPortalEnabled());
+                && Boolean.TRUE.equals(tenant.getPortalEnabled())
+                && !(tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now()));
+        boolean expired = tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now());
         return Map.of(
                 "name", tenant.getName() != null ? tenant.getName() : "",
                 "portalTitle", tenant.getPortalTitle() != null ? tenant.getPortalTitle() : "",
@@ -116,7 +119,8 @@ public class TenantService {
                 "contactPhone", tenant.getContactPhone() != null ? tenant.getContactPhone() : "",
                 "logoUrl", tenant.getLogoUrl() != null ? tenant.getLogoUrl() : "",
                 "themeColor", tenant.getThemeColor() != null ? tenant.getThemeColor() : "",
-                "portalEnabled", portalOk
+                "portalEnabled", portalOk,
+                "expired", expired
         );
     }
 
@@ -132,11 +136,23 @@ public class TenantService {
         );
     }
 
-    /** 更新租户（平台管理用，可修改所有字段） */
+    /** 检查租户是否可用（ACTIVE + 未过期） */
+    public boolean isTenantAvailable(Long tenantId) {
+        Tenant tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null || !"ACTIVE".equals(tenant.getStatus())) {
+            return false;
+        }
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+        return true;
+    }
+
+    /** 更新租户（平台管理用，可修改所有字段含到期时间） */
     public void updateTenantByPlatform(Long tenantId, String name, String contactName,
                                        String contactPhone, String address,
                                        Integer maxKnowledgeBases, Integer maxDocuments,
-                                       Integer maxAiDailyCalls) {
+                                       Integer maxAiDailyCalls, LocalDateTime expiredAt) {
         Tenant tenant = tenantMapper.selectById(tenantId);
         if (tenant == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "租户不存在");
@@ -151,6 +167,8 @@ public class TenantService {
         if (maxKnowledgeBases != null) tenant.setMaxKnowledgeBases(maxKnowledgeBases);
         if (maxDocuments != null) tenant.setMaxDocuments(maxDocuments);
         if (maxAiDailyCalls != null) tenant.setMaxAiDailyCalls(maxAiDailyCalls);
+        // expiredAt 支持显式设置为 null（清除到期时间）或设置新值
+        tenant.setExpiredAt(expiredAt);
         tenantMapper.updateById(tenant);
     }
 

@@ -38,6 +38,7 @@ export interface PortalConfig {
   logoUrl: string;
   themeColor: string;
   portalEnabled: boolean;
+  expired?: boolean;
 }
 
 /** 获取门户配置（公开接口，无需登录） */

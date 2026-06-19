@@ -64,6 +64,11 @@ public class SysUserService {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业已被禁用，请联系平台管理员");
         }
 
+        // 租户到期校验
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期，请联系平台管理员");
+        }
+
         SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getTenantId, tenant.getId())
@@ -267,6 +272,10 @@ public class SysUserService {
         // 校验租户状态：租户被禁用后，该租户下所有用户均不可登录
         Tenant tenant = tenantService.getById(tenantId);
         if (tenant == null || !"ACTIVE".equals(tenant.getStatus())) {
+            return null;
+        }
+        // 校验租户到期：过期后该租户下所有用户即时失效
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(java.time.LocalDateTime.now())) {
             return null;
         }
         return user;

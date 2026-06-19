@@ -5,6 +5,7 @@ import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.ai.service.AiService;
 import com.repair.ai.saas.module.ai.service.AiService.AiChatResult;
+import com.repair.ai.saas.module.ai.service.AiUsageService;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -24,6 +26,7 @@ public class AiPublicController {
 
     private final AiService aiService;
     private final TenantService tenantService;
+    private final AiUsageService aiUsageService;
 
     @PostMapping("/{tenantCode}/ai/chat")
     public ApiResponse<Map<String, Object>> chat(
@@ -39,6 +42,13 @@ public class AiPublicController {
         if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
         }
+        // 校验租户到期
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
+        }
+
+        // AI 日调用量检查（公开接口受限额约束）
+        aiUsageService.checkAndIncrement(tenant.getId(), tenant.getMaxAiDailyCalls());
 
         AiChatResult result = aiService.chat(
                 tenant.getId(),

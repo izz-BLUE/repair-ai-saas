@@ -170,6 +170,10 @@ public class TicketController {
         if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
         }
+        // 校验租户到期
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
+        }
 
         RepairTicket ticket = ticketService.publicRepairRequest(tenant.getId(),
                 req.name, req.phone, req.address, req.productType, req.faultDescription);

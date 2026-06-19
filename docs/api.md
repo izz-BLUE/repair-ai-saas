@@ -154,12 +154,12 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/platform/tenants` | 租户列表（分页，排除 PLATFORM） |
-| POST | `/api/platform/tenants` | 创建租户（自动生成 tenantCode + ADMIN 账号） |
+| POST | `/api/platform/tenants` | 创建租户（自动生成 tenantCode + 随机临时密码） |
 | GET | `/api/platform/tenants/{id}` | 租户详情 |
-| PUT | `/api/platform/tenants/{id}` | 编辑租户（基础信息 + 限额） |
+| PUT | `/api/platform/tenants/{id}` | 编辑租户（基础信息 + 限额 + 到期时间） |
 | POST | `/api/platform/tenants/{id}/enable` | 启用租户 |
 | POST | `/api/platform/tenants/{id}/disable` | 禁用租户 |
-| POST | `/api/platform/tenants/{id}/reset-admin-password` | 重置管理员密码 |
+| POST | `/api/platform/tenants/{id}/reset-admin-password` | 重置管理员密码（随机临时密码） |
 
 ---
 

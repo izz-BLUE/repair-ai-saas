@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { HomeOutlined, RobotOutlined, FormOutlined, SearchOutlined, LockOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { HomeOutlined, RobotOutlined, FormOutlined, SearchOutlined, LockOutlined, ExclamationCircleOutlined, FieldTimeOutlined } from '@ant-design/icons';
 import { getPortalSettings, type PortalConfig } from '../api/portal';
 import { PortalConfigProvider } from '../contexts/PortalConfigContext';
 
@@ -19,7 +19,7 @@ const PortalLayout: React.FC = () => {
 
   const [config, setConfig] = useState<PortalConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<'not_found' | 'disabled' | null>(null);
+  const [error, setError] = useState<'not_found' | 'disabled' | 'expired' | null>(null);
 
   useEffect(() => {
     if (!tenantCode) return;
@@ -28,7 +28,9 @@ const PortalLayout: React.FC = () => {
     getPortalSettings(tenantCode)
       .then((data) => {
         setConfig(data);
-        if (!data.portalEnabled) {
+        if (data.expired) {
+          setError('expired');
+        } else if (!data.portalEnabled) {
           setError('disabled');
         }
       })
@@ -93,6 +95,33 @@ const PortalLayout: React.FC = () => {
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>该企业服务门户暂未启用</h2>
           <p style={{ color: '#64748b', fontSize: 15, margin: '0 0 8px', lineHeight: 1.6 }}>
             {config?.name ? `${config.name} 的` : ''}在线服务暂时不可用。
+          </p>
+          {config?.contactPhone && (
+            <p style={{ color: '#475569', fontSize: 15, margin: '0 0 24px' }}>
+              联系电话：<strong>{config.contactPhone}</strong>
+            </p>
+          )}
+          {!config?.contactPhone && <div style={{ height: 24 }} />}
+          <button
+            onClick={() => window.location.href = '/'}
+            style={{ padding: '10px 24px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, cursor: 'pointer' }}
+          >
+            返回首页
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 服务已到期
+  if (error === 'expired') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ textAlign: 'center', maxWidth: 400 }}>
+          <FieldTimeOutlined style={{ fontSize: 56, color: '#dc2626', marginBottom: 20 }} />
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>服务已到期</h2>
+          <p style={{ color: '#64748b', fontSize: 15, margin: '0 0 8px', lineHeight: 1.6 }}>
+            {config?.name ? `${config.name} 的` : ''}服务订阅已到期，在线服务暂停使用。
           </p>
           {config?.contactPhone && (
             <p style={{ color: '#475569', fontSize: 15, margin: '0 0 24px' }}>

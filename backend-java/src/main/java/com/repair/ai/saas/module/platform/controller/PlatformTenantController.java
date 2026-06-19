@@ -12,6 +12,8 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -24,6 +26,9 @@ public class PlatformTenantController {
 
     private final TenantService tenantService;
     private final SysUserService sysUserService;
+
+    private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * 租户列表（分页，排除 PLATFORM 租户）
@@ -44,7 +49,7 @@ public class PlatformTenantController {
     }
 
     /**
-     * 创建租户（自动生成 tenantCode + ADMIN 账号）
+     * 创建租户（自动生成 tenantCode + ADMIN 账号，随机密码）
      */
     @PostMapping
     public ApiResponse<Map<String, Object>> createTenant(
@@ -55,9 +60,9 @@ public class PlatformTenantController {
         // 1. 创建租户
         Tenant tenant = tenantService.createTenant(req.name, req.contactName, req.contactPhone);
 
-        // 2. 创建管理员账号（默认密码 Admin@2024）
+        // 2. 创建管理员账号（随机密码）
         String adminUsername = "admin";
-        String adminPassword = "Admin@2024";
+        String adminPassword = generateRandomPassword(12);
         var admin = sysUserService.createUser(
                 tenant.getId(), adminUsername, adminPassword,
                 req.contactName, req.contactPhone, null, "ADMIN"
@@ -85,7 +90,7 @@ public class PlatformTenantController {
     }
 
     /**
-     * 编辑租户（平台管理员可修改基础信息和限额）
+     * 编辑租户（平台管理员可修改基础信息、限额和到期时间）
      */
     @PutMapping("/{id}")
     public ApiResponse<Void> updateTenant(@PathVariable Long id,
@@ -94,7 +99,8 @@ public class PlatformTenantController {
         RoleChecker.requireSuperAdmin(currentUser);
         tenantService.updateTenantByPlatform(
                 id, req.name, req.contactName, req.contactPhone, req.address,
-                req.maxKnowledgeBases, req.maxDocuments, req.maxAiDailyCalls
+                req.maxKnowledgeBases, req.maxDocuments, req.maxAiDailyCalls,
+                req.expiredAt
         );
         return ApiResponse.success();
     }
@@ -122,16 +128,26 @@ public class PlatformTenantController {
     }
 
     /**
-     * 重置租户管理员密码
+     * 重置租户管理员密码（随机临时密码）
      */
     @PostMapping("/{id}/reset-admin-password")
     public ApiResponse<Map<String, Object>> resetAdminPassword(
             @PathVariable Long id,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireSuperAdmin(currentUser);
-        String newPassword = "Admin@2024";
+        String newPassword = generateRandomPassword(12);
         sysUserService.resetAdminPassword(id, newPassword);
         return ApiResponse.success(Map.of("newPassword", newPassword));
+    }
+
+    // ==================== 工具方法 ====================
+
+    private static String generateRandomPassword(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(PASSWORD_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     // ==================== DTO ====================
@@ -149,6 +165,7 @@ public class PlatformTenantController {
             String address,
             Integer maxKnowledgeBases,
             Integer maxDocuments,
-            Integer maxAiDailyCalls
+            Integer maxAiDailyCalls,
+            LocalDateTime expiredAt
     ) {}
 }

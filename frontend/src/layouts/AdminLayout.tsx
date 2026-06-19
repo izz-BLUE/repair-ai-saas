@@ -11,8 +11,10 @@ import {
   LogoutOutlined,
   UserOutlined,
   SettingOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -29,6 +31,7 @@ const menuItems = [
 
 const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
@@ -118,6 +121,8 @@ const AdminLayout: React.FC = () => {
           <Dropdown
             menu={{
               items: [
+                { key: 'changePwd', icon: <KeyOutlined />, label: '修改密码', onClick: () => setChangePwdOpen(true) },
+                { type: 'divider' as const },
                 { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: handleLogout },
               ],
             }}
@@ -146,6 +151,7 @@ const AdminLayout: React.FC = () => {
           <Outlet />
         </Content>
       </Layout>
+      <ChangePasswordModal open={changePwdOpen} onClose={() => setChangePwdOpen(false)} />
     </Layout>
   );
 };
