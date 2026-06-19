@@ -2,7 +2,7 @@
 
 面向小型售后维修团队的 **AI 工单管理 SaaS**，支持多租户、RBAC 权限、工单状态机、FAQ 知识库、Qdrant 向量检索、AI 智能问答。
 
-> Java 后端 + Python AI 服务双架构，附带 React 管理后台。Python 不可用时自动降级为 SQL 兜底。
+> Java 后端 + Python AI 服务双架构，附带 React 管理后台和企业服务门户。Python 不可用时自动降级为 SQL 兜底。
 
 ## 业务场景
 
@@ -28,6 +28,7 @@
 | 知识库 | FAQ 知识库 + 知识条目 CRUD |
 | 文档上传 | 上传 txt/md 自动解析为知识条目（V0.3） |
 | AI 问答 | 基于 Qdrant 向量检索的 RAG 问答 |
+| 企业门户 | 客户自助服务：AI 客服 / 提交报修 / 查询进度（V0.3.2） |
 | 操作日志 | 关键操作全记录 |
 
 ## 技术架构
@@ -96,8 +97,8 @@ agent-python/app/
 
 frontend/src/
 ├── api/             # Axios 封装 + API 函数
-├── layouts/         # AdminLayout（Sider 布局）
-└── pages/           # 登录、仪表盘、知识库、条目、文档、AI 对话
+├── layouts/         # AdminLayout（Sider）、PortalLayout（顶栏）
+└── pages/           # 管理后台 + portal/ 企业门户
 ```
 
 ## 本地启动
@@ -147,6 +148,23 @@ npm run dev
 ```
 
 > 需要先启动 Java 后端，前端通过 Vite proxy 转发 API 请求。
+
+### 5. 访问企业服务门户
+
+门户页面不需要登录，通过 URL 中的 `tenantCode` 识别企业：
+
+```
+http://localhost:3000/portal/{tenantCode}
+```
+
+| 路由 | 功能 |
+|------|------|
+| `/portal/:tenantCode` | 企业服务首页（AI 客服入口 + 报修入口） |
+| `/portal/:tenantCode/chat` | AI 智能客服（调用公开 API，无需登录） |
+| `/portal/:tenantCode/repair` | 提交报修（自动创建客户 + 工单） |
+| `/portal/:tenantCode/query` | 查询进度（占位，后续版本开放） |
+
+> 复用已有公开接口 `POST /api/public/{tenantCode}/ai/chat` 和 `POST /api/public/{tenantCode}/repair-requests`，不需要 JWT，前端通过 URL 参数传入 tenantCode。
 
 ## 测试与 CI
 
@@ -202,7 +220,9 @@ pytest tests/ -v
 | V0.2.3 | 单元测试 + GitHub Actions CI | ✅ |
 | V0.2.4 | 项目文档与面试表达沉淀 | ✅ |
 | V0.3.0 | 文档上传解析（txt/md → knowledge_item → Qdrant） | ✅ |
-| V0.3 | 前端管理后台 / 服务门户 / 限流 | 📋 |
+| V0.3.1 | 前端管理后台（React + Ant Design 5） | ✅ |
+| V0.3.2 | 企业服务门户（AI 客服 / 报修 / 查询占位） | ✅ |
+| V0.4 | 师傅端 H5 / 限流 / 部署 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
