@@ -4,24 +4,25 @@ import type { PageResult } from './knowledge';
 export interface AiConversation {
   id: number;
   tenantId: number;
-  customerName: string | null;
   customerPhone: string | null;
-  productType: string | null;
-  faultType: string | null;
-  lastMessage: string | null;
-  messageCount: number;
+  customerName: string | null;
+  source: string;
+  question: string;
+  answer: string;
+  matchedItemCount: number | null;
+  shouldCreateTicket: number | null;
+  model: string | null;
+  traceId: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AiMessage {
   id: number;
+  tenantId: number;
   conversationId: number;
   role: string;
   content: string;
-  model: string | null;
-  matchedItemCount: number | null;
-  shouldCreateTicket: boolean | null;
   createdAt: string;
 }
 

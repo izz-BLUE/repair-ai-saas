@@ -50,16 +50,23 @@ const AiConversationPage: React.FC = () => {
   const columns: ColumnsType<AiConversation> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '客户姓名', dataIndex: 'customerName', width: 120, render: (v: string | null) => v || '-' },
-    { title: '电话', dataIndex: 'customerPhone', width: 130, render: (v: string | null) => v || '-' },
-    { title: '产品类型', dataIndex: 'productType', width: 100, render: (v: string | null) => v || '-' },
-    { title: '故障类型', dataIndex: 'faultType', width: 100, render: (v: string | null) => v || '-' },
-    { title: '最后消息', dataIndex: 'lastMessage', width: 250, ellipsis: true },
-    { title: '消息数', dataIndex: 'messageCount', width: 80 },
+    { title: '客户电话', dataIndex: 'customerPhone', width: 130, render: (v: string | null) => v || '-' },
+    { title: '问题', dataIndex: 'question', width: 200, ellipsis: true },
+    { title: '来源', dataIndex: 'source', width: 100 },
+    {
+      title: '匹配条目', dataIndex: 'matchedItemCount', width: 90,
+      render: (v: number | null) => v ?? '-',
+    },
+    {
+      title: '是否报修', dataIndex: 'shouldCreateTicket', width: 90,
+      render: (v: number | null) => v ? <Tag color="orange">是</Tag> : <Tag>否</Tag>,
+    },
+    { title: '模型', dataIndex: 'model', width: 100, render: (v: string | null) => v || '-' },
     { title: '创建时间', dataIndex: 'createdAt', width: 180 },
     {
       title: '操作', width: 100,
       render: (_, record) => (
-        <a onClick={() => handleViewDetail(record)}>查看详情</a>
+        <a onClick={() => handleViewDetail(record)}>详情</a>
       ),
     },
   ];
@@ -72,7 +79,7 @@ const AiConversationPage: React.FC = () => {
         columns={columns}
         dataSource={data}
         loading={loading}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1200 }}
         pagination={{
           current: page,
           pageSize: size,
@@ -96,9 +103,10 @@ const AiConversationPage: React.FC = () => {
             {currentConv && (
               <Space style={{ marginBottom: 16 }} wrap>
                 <Tag>客户: {currentConv.customerName || '匿名'}</Tag>
-                <Tag>产品: {currentConv.productType || '-'}</Tag>
-                <Tag>故障: {currentConv.faultType || '-'}</Tag>
-                <Tag>消息数: {currentConv.messageCount}</Tag>
+                <Tag>来源: {currentConv.source}</Tag>
+                <Tag>匹配: {currentConv.matchedItemCount ?? 0} 条</Tag>
+                <Tag>模型: {currentConv.model || '-'}</Tag>
+                {currentConv.shouldCreateTicket ? <Tag color="orange">建议报修</Tag> : null}
               </Space>
             )}
             <List
@@ -113,15 +121,12 @@ const AiConversationPage: React.FC = () => {
                     }}
                   >
                     <Space align="start">
-                      {msg.role === 'user' ? <UserOutlined style={{ color: '#1890ff' }} /> : <RobotOutlined style={{ color: '#52c41a' }} />}
+                      {msg.role?.toUpperCase() === 'USER' ? <UserOutlined style={{ color: '#1890ff' }} /> : <RobotOutlined style={{ color: '#52c41a' }} />}
                       <div>
                         <div style={{ marginBottom: 4 }}>
-                          <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
-                            {msg.role === 'user' ? '用户' : 'AI'}
+                          <Tag color={msg.role?.toUpperCase() === 'USER' ? 'blue' : 'green'}>
+                            {msg.role?.toUpperCase() === 'USER' ? '用户' : 'AI'}
                           </Tag>
-                          {msg.model && <Tag>{msg.model}</Tag>}
-                          {msg.matchedItemCount !== null && <Tag>匹配条目: {msg.matchedItemCount}</Tag>}
-                          {msg.shouldCreateTicket && <Tag color="orange">建议报修</Tag>}
                         </div>
                         <Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</Paragraph>
                         <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>{msg.createdAt}</div>
