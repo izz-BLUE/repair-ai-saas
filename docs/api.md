@@ -118,6 +118,15 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 
 > 当前仅支持 .txt / .md 格式，文件大小限制 10MB。上传后自动解析为知识条目并同步到 Qdrant。
 
+### 企业门户前端路由
+
+| 路径 | 说明 |
+|------|------|
+| `/portal/:tenantCode` | 企业服务首页（AI 客服入口 + 报修入口 + 查询入口） |
+| `/portal/:tenantCode/chat` | AI 智能客服（调用 `POST /api/public/{tenantCode}/ai/chat`） |
+| `/portal/:tenantCode/repair` | 提交报修表单（调用 `POST /api/public/{tenantCode}/repair-requests`） |
+| `/portal/:tenantCode/query` | 查询进度（占位，后续版本开放） |
+
 ### AI 对话记录
 
 | 方法 | 路径 | 说明 |

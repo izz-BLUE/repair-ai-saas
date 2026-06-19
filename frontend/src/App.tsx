@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, App as AntdApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
+import { setMessageApi } from './api/http';
 import AdminLayout from './layouts/AdminLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -9,6 +10,11 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import KnowledgeItemPage from './pages/KnowledgeItemPage';
 import DocumentPage from './pages/DocumentPage';
 import AiConversationPage from './pages/AiConversationPage';
+import PortalLayout from './layouts/PortalLayout';
+import PortalHomePage from './pages/portal/PortalHomePage';
+import PortalChatPage from './pages/portal/PortalChatPage';
+import PortalRepairPage from './pages/portal/PortalRepairPage';
+import PortalQueryPage from './pages/portal/PortalQueryPage';
 
 const theme = {
   token: {
@@ -44,10 +50,18 @@ const theme = {
   },
 };
 
+/** 将 antd App 的 message 实例注入到 http 模块，消除静态 message 警告 */
+const MessageBridge: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { message } = AntdApp.useApp();
+  useEffect(() => { setMessageApi(message); }, [message]);
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={zhCN} theme={theme}>
       <AntdApp>
+        <MessageBridge>
         <BrowserRouter>
           <Routes>
             <Route path="/admin/login" element={<LoginPage />} />
@@ -59,9 +73,16 @@ const App: React.FC = () => {
               <Route path="documents" element={<DocumentPage />} />
               <Route path="ai-conversations" element={<AiConversationPage />} />
             </Route>
+            <Route path="/portal/:tenantCode" element={<PortalLayout />}>
+              <Route index element={<PortalHomePage />} />
+              <Route path="chat" element={<PortalChatPage />} />
+              <Route path="repair" element={<PortalRepairPage />} />
+              <Route path="query" element={<PortalQueryPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/admin/login" replace />} />
           </Routes>
         </BrowserRouter>
+        </MessageBridge>
       </AntdApp>
     </ConfigProvider>
   );

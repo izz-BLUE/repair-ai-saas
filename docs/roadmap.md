@@ -109,21 +109,48 @@
 
 ---
 
-## V0.3.1 — 前端管理后台（规划中）
+## V0.3.1 — 前端管理后台 ✅
 
 **目标：** 管理员可通过 Web 界面管理知识库和查看 AI 对话。
 
-**规划功能：**
-- Vite + React + TypeScript + Ant Design
-- 登录页 + 后台布局
-- 知识库/知识条目管理页面
-- 文档上传页面
-- AI 对话记录页面
-- 企业服务门户（/portal/:tenantCode）
+**功能：**
+- Vite + React 18 + TypeScript + Ant Design 5 + React Router 6
+- 登录页（企业编码 + 用户名 + 密码）
+- AdminLayout 侧边栏布局（Sider + Sticky Header）
+- 知识库管理页（列表、新增、编辑、启用/停用）
+- 知识条目管理页（列表、搜索、新增、编辑、禁用、来源标记、向量同步）
+- 文档上传页（上传 .txt/.md，流程图展示，状态筛选，重解析，删除）
+- AI 对话记录页（列表 + 聊天气泡详情）
+- Dashboard 仪表盘（实时统计 + 模块入口）
+- Axios 封装（Bearer token、401 重定向、ApiResponse 解包）
+- antd 主题 Token 统一配置（ConfigProvider）
+- antd 废弃 API 迁移（destroyOnHidden、styles.content、App.useApp()）
+- UI 设计优化：企业风格设计系统，非默认模板感
+- 浏览器验收（Playwright 全页验证）
+- CI 新增 frontend job（Node.js 20 + npm ci + npm run build）
+- 文档更新（CLAUDE.md 前端规则、README、api.md）
 
 ---
 
-## V0.3.2 — 功能增强（规划中）
+## V0.3.2 — 企业服务门户 ✅
+
+**目标：** 企业客户可通过公开门户自助咨询 AI、提交报修。
+
+**功能：**
+- 门户首页（/portal/:tenantCode）：对话式入口 + 3 服务卡片
+- AI 智能客服（/portal/:tenantCode/chat）：对话式交互，知识库匹配提示，报修引导
+- 提交报修（/portal/:tenantCode/repair）：表单提交，复用已有公开报修 API，成功页展示工单编号
+- 查询进度占位（/portal/:tenantCode/query）：后续版本开放提示
+- PortalLayout 顶栏导航（区别于管理后台侧边栏）
+- 移动端响应式适配
+- 无效 tenantCode 错误处理（不白屏，友好提示）
+- antd 静态 message 警告修复（MessageBridge + setMessageApi 模式）
+- 浏览器验收（Playwright 全流程）
+- 文档更新（README、api.md、roadmap.md、interview.md）
+
+---
+
+## V0.4 — 功能增强（规划中）
 
 **规划功能：**
 - 师傅端 H5（移动端适配）

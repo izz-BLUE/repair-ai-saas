@@ -265,3 +265,15 @@ Java AiClient → HTTP POST → Python /agent/chat → 返回 JSON
 ### Q: 上传文档如何同步到向量库，失败怎么兜底？
 
 **A:** 每个解析出的段落生成 knowledge_item 后，fire-and-forget 调用 Python Agent 同步到 Qdrant。同步失败只记录 warning 日志，不影响 MySQL 中的条目数据。兜底方式：1) 管理员可以手动触发 `POST /api/admin/knowledge-items/sync-vectors` 批量重建向量；2) 重解析接口会重新同步所有条目；3) 即使向量同步全部失败，Java 的 SQL LIKE 兜底仍能搜索到这些条目。
+
+### Q: 为什么把管理后台和企业门户放在同一个前端项目？
+
+**A:** 两者共享技术栈（React + Ant Design + Axios）、主题 Token、路由机制和 HTTP 封装。分开放会增加构建、部署和依赖管理成本。路由层面天然隔离（`/admin/*` vs `/portal/:tenantCode/*`），不会互相干扰。如果是大型团队，可以按路由懒加载拆分 chunk，但对小项目来说放一个仓库更高效。
+
+### Q: 企业门户如何通过 tenantCode 实现多租户访问？
+
+**A:** URL 路径携带 tenantCode（如 `/portal/TBQTW3G`），前端提取后拼入 API 路径（`/api/public/{tenantCode}/ai/chat`）。后端通过 `TenantService.getByTenantCode()` 查找对应租户，所有后续操作自动隔离到该租户的数据范围。不需要 JWT，因为是公开面向客户的接口。tenantCode 不存在时后端返回 `NOT_FOUND`，前端展示友好提示，不白屏。
+
+### Q: AI 问答如何引导用户从自助解决转为报修？
+
+**A:** AI 返回 `shouldCreateTicket` 和 `matchedItemCount` 两个字段。匹配到知识库条目时（matchedItemCount > 0），前端显示"已参考 N 条知识库资料"；shouldCreateTicket 为 true 时（知识库未覆盖），前端在 AI 回复下方展示橙色提示卡片"建议提交报修"，点击直接跳转报修表单。这个设计体现了"AI 优先，人工兜底"的服务理念。
