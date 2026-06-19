@@ -91,17 +91,44 @@
 
 ---
 
-## V0.3 — 功能增强（规划中）
+## V0.3.0 — 文档上传与解析
 
-**目标：** 可以给真实小团队试用。
+**目标：** 支持管理员上传文档，自动解析为知识条目并同步向量库。
+
+**功能：**
+- 数据库迁移 V5：knowledge_document 表 + knowledge_item.document_id
+- 文档上传接口（multipart/form-data，仅支持 .txt / .md，10MB 限制）
+- 文档自动解析：按空行切分段落，每段生成一条 knowledge_item
+- 自动生成条目后自动同步 Qdrant（fire-and-forget）
+- 文档删除：逻辑删除 + 关联条目标记 INACTIVE + Qdrant 同步
+- 文档重解析：先删旧条目再重新生成
+- 文件安全：UUID 文件名、路径穿越防护、白名单后缀
+- 多租户隔离：所有查询带 tenant_id
+- Flyway V5 迁移检查
+- 文档更新（README、api.md、architecture.md、roadmap.md、interview.md）
+
+---
+
+## V0.3.1 — 前端管理后台（规划中）
+
+**目标：** 管理员可通过 Web 界面管理知识库和查看 AI 对话。
 
 **规划功能：**
-- 文件/图片上传（故障图片、维修照片）
-- 企业服务门户（/r/{tenantCode} 公开页）
-- 前端管理后台（Vue 3）
+- Vite + React + TypeScript + Ant Design
+- 登录页 + 后台布局
+- 知识库/知识条目管理页面
+- 文档上传页面
+- AI 对话记录页面
+- 企业服务门户（/portal/:tenantCode）
+
+---
+
+## V0.3.2 — 功能增强（规划中）
+
+**规划功能：**
 - 师傅端 H5（移动端适配）
 - Redis 限流（滑动窗口，防刷）
-- 基础统计看板（今日工单、待处理、完成率、常见故障 Top10）
+- 基础统计看板
 - Docker Compose 一键部署
 
 ---

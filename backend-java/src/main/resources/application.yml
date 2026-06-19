@@ -7,6 +7,10 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8080
@@ -15,6 +19,9 @@ app:
   jwt:
     secret: dGVzdC1zZWNyZXQta2V5LWZvci1yZXBhaXItYWktc2Fhcy12MDEtZGV2ZWxvcG1lbnQ=
     expiration-ms: 86400000
+  upload:
+    base-dir: data/uploads
+    max-size: 10485760
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

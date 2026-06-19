@@ -1,4 +1,4 @@
-package com.repair.ai.saas.module.knowledge.entity;
+package com.repair.ai.saas.module.knowledge.document.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -6,8 +6,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("knowledge_item")
-public class KnowledgeItem {
+@TableName("knowledge_document")
+public class KnowledgeDocument {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -16,24 +16,23 @@ public class KnowledgeItem {
 
     private Long knowledgeBaseId;
 
-    private String title;
+    private String originalFilename;
 
-    private String question;
+    private String storedFilename;
 
-    private String answer;
+    private String contentType;
 
-    private String productType;
+    private Long fileSize;
 
-    private String faultType;
+    private String storagePath;
 
-    private String keywords;
+    private String parseStatus;
 
-    private Integer sortOrder;
+    private Integer itemCount;
 
-    /** 来源文档ID（NULL 表示手工创建） */
-    private Long documentId;
+    private String errorMessage;
 
-    private String status;
+    private Long createdBy;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

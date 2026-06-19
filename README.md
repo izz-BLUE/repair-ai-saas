@@ -26,6 +26,7 @@
 | 工单状态机 | PENDING → ASSIGNED → IN_PROGRESS → COMPLETED → CLOSED |
 | 师傅端 | 接单、开始处理、提交维修结果 |
 | 知识库 | FAQ 知识库 + 知识条目 CRUD |
+| 文档上传 | 上传 txt/md 自动解析为知识条目（V0.3） |
 | AI 问答 | 基于 Qdrant 向量检索的 RAG 问答 |
 | 操作日志 | 关键操作全记录 |
 
@@ -62,7 +63,7 @@
 |------|------|------|
 | Java 后端 | Spring Boot 3.2 + MyBatis-Plus 3.5 | 业务主服务：工单、客户、权限、知识库管理 |
 | Python Agent | FastAPI + OpenAI SDK | AI 服务：Embedding、向量检索、LLM 问答 |
-| MySQL 8.0 | Flyway 迁移 | 业务数据持久化（10 张表） |
+| MySQL 8.0 | Flyway 迁移 | 业务数据持久化（11 张表） |
 | Redis 7 | Spring Data Redis | 缓存 |
 | Qdrant | v1.18.0 | FAQ 向量索引（COSINE 距离） |
 | 认证 | JWT (jjwt 0.12) + BCrypt | 无 Spring Security，自研轻量认证 |
@@ -80,7 +81,7 @@ backend-java/src/main/java/com/repair/ai/saas/
     ├── user/        # 员工 CRUD、登录
     ├── customer/    # 客户管理
     ├── ticket/      # 工单（核心），含状态机
-    ├── knowledge/   # FAQ 知识库
+    ├── knowledge/   # FAQ 知识库 + 文档上传解析（V0.3）
     ├── ai/          # AI 问答 + 对话记录
     └── operation/   # 操作日志
 
@@ -182,7 +183,8 @@ pytest tests/ -v
 | V0.2.2 | Qdrant 向量检索 + Embedding + RAG | ✅ |
 | V0.2.3 | 单元测试 + GitHub Actions CI | ✅ |
 | V0.2.4 | 项目文档与面试表达沉淀 | ✅ |
-| V0.3 | 文件上传 / 服务门户 / 前端后台 / 限流 | 📋 |
+| V0.3.0 | 文档上传解析（txt/md → knowledge_item → Qdrant） | ✅ |
+| V0.3 | 前端管理后台 / 服务门户 / 限流 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
@@ -209,7 +211,8 @@ pytest tests/ -v
 | ticket_status_log | 工单状态流转日志 |
 | operation_log | 操作日志 |
 | knowledge_base | 知识库 |
-| knowledge_item | 知识条目 |
+| knowledge_item | 知识条目（V0.3 支持 document_id 追踪来源） |
+| knowledge_document | 知识文档（V0.3） |
 | ai_conversation | AI 对话记录 |
 | ai_message | AI 消息记录 |
 

@@ -106,6 +106,18 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | PUT | `/api/admin/knowledge-items/{id}/status` | 启用/停用知识条目 |
 | POST | `/api/admin/knowledge-items/sync-vectors` | 批量同步向量 |
 
+### 文档上传（V0.3）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/admin/knowledge-documents/upload` | 上传文档（multipart: knowledgeBaseId + file） |
+| GET | `/api/admin/knowledge-documents` | 文档列表（支持 knowledgeBaseId / parseStatus 过滤） |
+| GET | `/api/admin/knowledge-documents/{id}` | 文档详情 |
+| DELETE | `/api/admin/knowledge-documents/{id}` | 删除文档（关联条目标记 INACTIVE） |
+| POST | `/api/admin/knowledge-documents/{id}/reparse` | 重新解析文档 |
+
+> 当前仅支持 .txt / .md 格式，文件大小限制 10MB。上传后自动解析为知识条目并同步到 Qdrant。
+
 ### AI 对话记录
 
 | 方法 | 路径 | 说明 |

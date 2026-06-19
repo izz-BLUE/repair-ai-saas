@@ -249,3 +249,19 @@ Java AiClient → HTTP POST → Python /agent/chat → 返回 JSON
 ### Q: 为什么 Java 调 Python 而不是反过来？
 
 **A:** Java 是业务主服务，处理所有 CRUD 和权限。Python 是 AI 辅助服务，只负责向量和 LLM。如果反过来，Python 需要理解所有业务逻辑（工单状态机、权限、租户），耦合太重。Java 调 Python 的方式让 Python 保持简单——接收 question 和 tenantId，返回 answer。
+
+### Q: 文档上传如何保证多租户隔离？
+
+**A:** 三层隔离：1) 文件存储路径按 `tenantId` 隔离：`data/uploads/{tenantId}/{uuid}.txt`；2) knowledge_document 表有 `tenant_id` 字段，所有查询强制带 `tenant_id` 条件；3) 生成的 knowledge_item 也带 `tenant_id`，并且通过 `document_id` 追踪来源。禁止 `selectById` 后再判断 tenant，必须在查询条件中直接过滤。
+
+### Q: 文档解析失败如何处理？
+
+**A:** 解析过程不在数据库事务内。文件保存成功后创建 document 记录（PENDING），然后尝试解析。如果解析失败：1) document 记录更新为 `parse_status=FAILED`，`error_message` 记录具体错误；2) 文件仍然保留在磁盘上，可以后续重试；3) 提供 `POST /{id}/reparse` 接口重新解析。这样即使解析失败，也不会导致整个上传接口 500，用户可以查看失败原因并重试。
+
+### Q: 为什么 MVP 使用本地文件存储，后续如何演进到对象存储？
+
+**A:** MVP 阶段用本地磁盘存储是因为：1) 开发简单，不需要额外基础设施；2) 演示环境数据量小，本地磁盘足够；3) 减少外部依赖，部署更简单。演进路径：抽象一个 `FileStorage` 接口，MVP 实现 `LocalStorage`，后续实现 `S3Storage` 或 `MinioStorage`，上层代码不需要修改。配置切换即可。
+
+### Q: 上传文档如何同步到向量库，失败怎么兜底？
+
+**A:** 每个解析出的段落生成 knowledge_item 后，fire-and-forget 调用 Python Agent 同步到 Qdrant。同步失败只记录 warning 日志，不影响 MySQL 中的条目数据。兜底方式：1) 管理员可以手动触发 `POST /api/admin/knowledge-items/sync-vectors` 批量重建向量；2) 重解析接口会重新同步所有条目；3) 即使向量同步全部失败，Java 的 SQL LIKE 兜底仍能搜索到这些条目。

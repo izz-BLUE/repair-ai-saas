@@ -142,6 +142,47 @@ sequenceDiagram
 **批量同步：**
 - `POST /api/admin/knowledge-items/sync-vectors` 遍历所有 ACTIVE 条目逐个同步
 
+## 6.5 文档上传与解析流程（V0.3）
+
+```mermaid
+sequenceDiagram
+    participant A as Admin
+    participant J as Java 后端
+    participant FS as 本地磁盘
+    participant M as MySQL
+    participant P as Python Agent
+    participant Q as Qdrant
+
+    A->>J: POST /knowledge-documents/upload (multipart)
+    J->>J: 校验文件类型/大小 + 知识库归属
+    J->>FS: 保存到 data/uploads/{tenantId}/{uuid}.txt
+    J->>M: 创建 knowledge_document (PENDING)
+    J->>J: 读取文件内容，按空行切分段落
+    loop 每个段落
+        J->>M: 创建 knowledge_item (document_id=doc.id)
+        J->>P: POST /agent/knowledge/sync (fire-and-forget)
+        P->>Q: embed + upsert
+    end
+    J->>M: 更新 document parse_status=SUCCESS, item_count=N
+    J-->>A: 返回 document 信息
+```
+
+**删除流程：**
+- 逻辑删除 `knowledge_document`
+- 将 `document_id` 关联的所有 `knowledge_item` 标记 INACTIVE
+- 逐个通知 Python 同步 Qdrant（fire-and-forget，失败仅 warning）
+
+**重解析流程：**
+- 先将旧条目标记 INACTIVE 并同步 Qdrant
+- 重新读取文件 → 切分 → 生成新条目 → 同步 Qdrant
+- 更新 document 的 item_count / parse_status
+
+**文件安全：**
+- 文件名：UUID + 安全后缀，不信任 originalFilename
+- 路径穿越检查：normalize 后确认仍在 base-dir 内
+- 白名单：仅 .txt / .md（MVP 阶段）
+- 大小限制：10MB
+
 ## 7. 多租户隔离设计
 
 ### 数据层
