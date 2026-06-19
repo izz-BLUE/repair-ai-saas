@@ -31,3 +31,6 @@ data/
 
 # Frontend build
 frontend/dist/
+
+# Playwright test artifacts
+.playwright-mcp/

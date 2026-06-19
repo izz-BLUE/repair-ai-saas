@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Popconfirm, Typography } from 'antd';
-import { PlusOutlined, SyncOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, Tag, Space, App, Popconfirm, Typography, Empty, Tooltip } from 'antd';
+import { PlusOutlined, SyncOutlined, EditOutlined, StopOutlined, CheckCircleOutlined, FileTextOutlined, FormOutlined } from '@ant-design/icons';
 import {
   listKnowledgeItems, createKnowledgeItem, updateKnowledgeItem,
   updateKnowledgeItemStatus, listKnowledgeBases, syncVectors,
@@ -9,7 +9,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 
 const { TextArea } = Input;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const KnowledgeItemPage: React.FC = () => {
   const [data, setData] = useState<KnowledgeItem[]>([]);
@@ -24,6 +24,7 @@ const KnowledgeItemPage: React.FC = () => {
   const [editing, setEditing] = useState<KnowledgeItem | null>(null);
   const [form] = Form.useForm();
   const [syncing, setSyncing] = useState(false);
+  const { message } = App.useApp();
 
   const fetchData = async (p = page, kw = keyword, kbId = kbIdFilter) => {
     setLoading(true);
@@ -111,34 +112,59 @@ const KnowledgeItemPage: React.FC = () => {
 
   const columns: ColumnsType<KnowledgeItem> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
-    { title: '标题', dataIndex: 'title', width: 200, ellipsis: true },
-    { title: '问题', dataIndex: 'question', width: 200, ellipsis: true },
     {
-      title: '答案', dataIndex: 'answer', width: 250, ellipsis: true,
-      render: (v: string) => <span style={{ color: '#666' }}>{v?.substring(0, 80)}{v?.length > 80 ? '...' : ''}</span>,
+      title: '标题', dataIndex: 'title', width: 180, ellipsis: true,
+      render: (v: string) => <Text strong style={{ color: '#0f172a' }}>{v}</Text>,
     },
-    { title: '产品类型', dataIndex: 'productType', width: 100, render: (v: string | null) => v || '-' },
-    { title: '故障类型', dataIndex: 'faultType', width: 100, render: (v: string | null) => v || '-' },
+    { title: '问题', dataIndex: 'question', width: 180, ellipsis: true, render: (v: string) => <Text style={{ color: '#64748b' }}>{v}</Text> },
     {
-      title: '状态', dataIndex: 'status', width: 80,
-      render: (s: string) => <Tag color={s === 'ACTIVE' ? 'green' : 'default'}>{s === 'ACTIVE' ? '启用' : '禁用'}</Tag>,
+      title: '答案', dataIndex: 'answer', width: 200, ellipsis: true,
+      render: (v: string) => <Text style={{ color: '#94a3b8', fontSize: 13 }}>{v?.substring(0, 60)}{v?.length > 60 ? '...' : ''}</Text>,
+    },
+    { title: '产品', dataIndex: 'productType', width: 80, render: (v: string | null) => v ? <Tag style={{ borderRadius: 4 }}>{v}</Tag> : <Text style={{ color: '#cbd5e1' }}>-</Text> },
+    { title: '故障', dataIndex: 'faultType', width: 80, render: (v: string | null) => v ? <Tag style={{ borderRadius: 4 }}>{v}</Tag> : <Text style={{ color: '#cbd5e1' }}>-</Text> },
+    {
+      title: '状态', dataIndex: 'status', width: 90, align: 'center',
+      render: (s: string) => (
+        <Tag
+          color={s === 'ACTIVE' ? '#ecfdf5' : '#f1f5f9'}
+          style={{
+            color: s === 'ACTIVE' ? '#059669' : '#64748b',
+            border: s === 'ACTIVE' ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
+            borderRadius: 6,
+            fontWeight: 500,
+          }}
+          icon={s === 'ACTIVE' ? <CheckCircleOutlined /> : <StopOutlined />}
+        >
+          {s === 'ACTIVE' ? '启用' : '禁用'}
+        </Tag>
+      ),
     },
     {
-      title: '来源', dataIndex: 'documentId', width: 80,
-      render: (v: number | null) => v ? <Tag color="blue">文档</Tag> : <Tag>手动</Tag>,
+      title: '来源', dataIndex: 'documentId', width: 80, align: 'center',
+      render: (v: number | null) => v
+        ? <Tag icon={<FileTextOutlined />} color="blue" style={{ borderRadius: 4 }}>文档</Tag>
+        : <Tag icon={<FormOutlined />} style={{ borderRadius: 4, color: '#64748b', borderColor: '#e2e8f0' }}>手动</Tag>,
     },
     {
-      title: '操作', width: 160,
+      title: '操作', width: 100,
       render: (_, record) => (
-        <Space>
-          <Button size="small" onClick={() => handleEdit(record)}>编辑</Button>
+        <Space size={4}>
+          <Tooltip title="编辑">
+            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ color: '#64748b' }} />
+          </Tooltip>
           <Popconfirm
             title={`确认${record.status === 'ACTIVE' ? '禁用' : '启用'}此条目？`}
             onConfirm={() => handleToggleStatus(record)}
           >
-            <Button size="small" type={record.status === 'ACTIVE' ? 'default' : 'primary'} danger={record.status === 'ACTIVE'}>
-              {record.status === 'ACTIVE' ? '禁用' : '启用'}
-            </Button>
+            <Tooltip title={record.status === 'ACTIVE' ? '禁用' : '启用'}>
+              <Button
+                type="text"
+                size="small"
+                icon={record.status === 'ACTIVE' ? <StopOutlined /> : <CheckCircleOutlined />}
+                style={{ color: record.status === 'ACTIVE' ? '#d97706' : '#059669' }}
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -147,14 +173,26 @@ const KnowledgeItemPage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>知识条目管理</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <Title level={4} style={{ margin: 0, color: '#0f172a' }}>知识条目</Title>
+          <Text style={{ color: '#64748b', fontSize: 13 }}>管理 FAQ 条目内容，支持手动创建和文档自动解析</Text>
+        </div>
         <Space>
-          <Button icon={<SyncOutlined />} loading={syncing} onClick={handleSync}>同步向量</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增条目</Button>
+          <Button icon={<SyncOutlined />} loading={syncing} onClick={handleSync}
+            style={{ borderRadius: 8 }}>
+            同步向量
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
+            style={{ borderRadius: 8, fontWeight: 500 }}>
+            新增条目
+          </Button>
         </Space>
       </div>
-      <Space style={{ marginBottom: 16 }} wrap>
+      <div style={{
+        display: 'flex', gap: 12, marginBottom: 16, padding: '12px 16px',
+        background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0',
+      }}>
         <Select
           allowClear
           placeholder="选择知识库"
@@ -164,26 +202,28 @@ const KnowledgeItemPage: React.FC = () => {
           options={kbList.map((kb) => ({ label: kb.name, value: kb.id }))}
         />
         <Input.Search
-          placeholder="搜索关键词"
-          style={{ width: 250 }}
+          placeholder="搜索标题、问题、答案"
+          style={{ width: 280 }}
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={handleSearch}
           allowClear
         />
-      </Space>
+      </div>
       <Table
         rowKey="id"
         columns={columns}
         dataSource={data}
         loading={loading}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1100 }}
+        locale={{ emptyText: <Empty description="暂无知识条目，点击上方按钮新增" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
         pagination={{
           current: page,
           pageSize: size,
           total,
           showTotal: (t) => `共 ${t} 条`,
           onChange: (p) => { setPage(p); fetchData(p); },
+          size: 'small',
         }}
       />
       <Modal
@@ -192,9 +232,11 @@ const KnowledgeItemPage: React.FC = () => {
         onOk={handleSave}
         onCancel={() => setModalOpen(false)}
         width={600}
-        destroyOnClose
+        destroyOnHidden
+        okText="保存"
+        cancelText="取消"
       >
-        <Form form={form} layout="vertical" preserve={false}>
+        <Form form={form} layout="vertical" preserve={false} style={{ marginTop: 16 }}>
           <Form.Item name="knowledgeBaseId" label="所属知识库" rules={[{ required: true, message: '请选择知识库' }]}>
             <Select
               placeholder="选择知识库"
