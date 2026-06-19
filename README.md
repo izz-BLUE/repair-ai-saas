@@ -224,6 +224,7 @@ pytest tests/ -v
 | V0.3.2 | 企业服务门户（AI 客服 / 报修 / 查询占位） | ✅ |
 | V0.3.3 | 商业化交付（租户配置、平台管理、门户品牌化、部署文档） | ✅ |
 | V0.3.4 | 商业化安全（到期拦截、随机密码、AI 限额、修改密码、知识库限额） | ✅ |
+| V0.3.5 | 试点客户部署包（部署脚本、演示数据、备份恢复、交付文档） | ✅ |
 | V0.4 | 师傅端 H5 / 限流 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
@@ -260,6 +261,59 @@ pytest tests/ -v
 
 所有业务表含 `tenant_id`、`created_at`、`updated_at`，核心表含 `deleted` 逻辑删除。
 
+## 试点部署
+
+> ⚠️ `docker-compose.prod.yml` 和 Nginx 配置为参考模板，未经实际生产环境验证。部署前请根据实际环境调整。
+
+### 快速开始
+
+```bash
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env，修改所有密码和 API Key
+
+# 2. 检查环境
+bash deploy/scripts/check-env.sh
+
+# 3. 构建前端 + 启动服务
+cd frontend && npm install && npm run build && cd ..
+docker compose -f docker-compose.prod.yml up -d
+
+# 4. 初始化演示数据（可选）
+bash deploy/scripts/init-demo-data.sh
+```
+
+详细部署流程见 [试点客户交付文档](docs/trial-customer-onboarding.md)。
+
+### 部署脚本
+
+| 脚本 | 用途 |
+|------|------|
+| `deploy/scripts/check-env.sh` | 部署前环境检查（.env、Docker、端口、目录） |
+| `deploy/scripts/init-demo-data.sh` | 演示数据初始化（纯 API 调用，不直接写库） |
+| `deploy/scripts/backup-mysql.sh` | MySQL 数据库备份 |
+| `deploy/scripts/backup-uploads.sh` | 上传文件备份 |
+| `deploy/scripts/backup-qdrant.sh` | Qdrant 向量数据备份 |
+| `deploy/scripts/restore-mysql.sh` | MySQL 数据库恢复（带二次确认） |
+
+所有脚本从 `.env` 读取配置，不硬编码密码。详见 [deploy/README.md](deploy/README.md)。
+
+## 商业化能力
+
+系统已内置以下商业化管理能力，通过平台管理后台（SUPER_ADMIN）配置：
+
+| 能力 | 说明 |
+|------|------|
+| 多租户隔离 | 所有业务表含 `tenant_id`，Service 层自动过滤 |
+| 门户品牌化 | 每个租户可配置标题、描述、主题色、Logo |
+| 知识库限额 | `max_knowledge_bases` 控制租户知识库数量 |
+| 文档限额 | `max_documents` 控制租户文档数量 |
+| AI 调用计量 | `max_ai_daily_calls` 控制每日 AI 调用量，按天统计 |
+| 到期管理 | `expired_at` 全链路拦截（登录 + 公开接口 + 门户） |
+| 随机临时密码 | 创建租户和重置密码均自动生成安全密码 |
+
+建议套餐方案见 [套餐与限额建议](docs/pricing-and-limits.md)。
+
 ## 详细文档
 
 - [系统架构](docs/architecture.md)
@@ -269,18 +323,24 @@ pytest tests/ -v
 - [产品文档](docs/product.md)
 - [部署文档](docs/deployment.md)
 - [备份与恢复](docs/backup.md)
+- [试点客户交付](docs/trial-customer-onboarding.md)
+- [套餐与限额](docs/pricing-and-limits.md)
 
 ## 安全说明
 
-`POST /api/public/{tenantCode}/repair-requests` 无需认证即可访问。当前演示版本未做 IP 限流。生产环境需补充：IP 限流、验证码、单租户频率限制。
+> **⚠️ 生产部署后必须立即修改所有默认密码，否则存在严重安全风险。**
 
-**默认平台管理员账号：** 企业编码 `PLATFORM`，用户名 `superadmin`，密码 `Admin@2024`。**生产部署后务必立即修改密码。** 详见 [部署文档安全检查清单](docs/deployment.md#生产部署安全检查清单)。
+**默认平台管理员账号：** 企业编码 `PLATFORM`，用户名 `superadmin`，密码 `Admin@2024`。
+**首次登录后立即修改密码。** 详见 [部署文档安全检查清单](docs/deployment.md#生产部署安全检查清单)。
 
-**V0.3.4 安全增强：**
-- 租户到期（expired_at）全链路拦截：登录 + JWT + 公开接口 + 门户
-- 创建租户和重置密码均使用随机临时密码（SecureRandom）
-- AI 日调用量限额（max_ai_daily_calls）
-- 知识库数量限额（max_knowledge_bases）
+**安全检查清单：**
+- 替换 `.env` 中的 `JWT_SECRET`（用 `openssl rand -base64 32` 生成）
+- 替换 `MYSQL_ROOT_PASSWORD`
+- 配置真实 `LLM_API_KEY` 和 `EMBEDDING_API_KEY`
+- 配置 HTTPS（Nginx SSL）
+- 配置定时备份（`deploy/scripts/backup-mysql.sh`）
+
+`POST /api/public/{tenantCode}/repair-requests` 无需认证即可访问。当前版本未做 IP 限流。生产环境需补充：IP 限流、验证码、单租户频率限制。
 
 ## License
 

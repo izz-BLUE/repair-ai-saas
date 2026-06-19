@@ -187,6 +187,25 @@
 
 ---
 
+## V0.3.5 — 试点客户部署包 ✅
+
+**目标：** 将项目整理为可交付给第一个试点客户的部署包。
+
+**功能：**
+- `deploy/scripts/` 部署脚本目录：环境检查、演示数据初始化、备份恢复
+- `check-env.sh` 部署前检查：.env 配置、Docker 环境、端口占用、目录可写
+- `init-demo-data.sh` 演示数据初始化：纯 API 调用，不直接操作数据库
+- 备份脚本：MySQL / 上传文件 / Qdrant 分别备份，自动创建目录，不打印密码
+- `restore-mysql.sh` 数据库恢复：二次确认机制，防止误操作
+- `deploy/nginx/repair-ai.conf` Nginx 反向代理参考模板
+- `.env.example` 增强：补充域名/端口/目录等部署变量，标注生产必须替换项
+- `docker-compose.prod.yml` 修复为纯 YAML（去掉 markdown 包裹）
+- `docs/trial-customer-onboarding.md` 试点客户交付流程文档
+- `docs/pricing-and-limits.md` 套餐与限额建议
+- README 新增"试点部署""商业化能力""部署脚本"章节
+
+---
+
 ## V0.4 — 功能增强（规划中）
 
 **规划功能：**
