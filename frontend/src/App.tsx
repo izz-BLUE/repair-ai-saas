@@ -10,6 +10,9 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import KnowledgeItemPage from './pages/KnowledgeItemPage';
 import DocumentPage from './pages/DocumentPage';
 import AiConversationPage from './pages/AiConversationPage';
+import TenantSettingsPage from './pages/TenantSettingsPage';
+import PlatformLayout from './layouts/PlatformLayout';
+import PlatformTenantsPage from './pages/platform/PlatformTenantsPage';
 import PortalLayout from './layouts/PortalLayout';
 import PortalHomePage from './pages/portal/PortalHomePage';
 import PortalChatPage from './pages/portal/PortalChatPage';
@@ -72,6 +75,11 @@ const App: React.FC = () => {
               <Route path="knowledge-items" element={<KnowledgeItemPage />} />
               <Route path="documents" element={<DocumentPage />} />
               <Route path="ai-conversations" element={<AiConversationPage />} />
+              <Route path="settings" element={<TenantSettingsPage />} />
+            </Route>
+            <Route path="/platform" element={<PlatformLayout />}>
+              <Route index element={<Navigate to="/platform/tenants" replace />} />
+              <Route path="tenants" element={<PlatformTenantsPage />} />
             </Route>
             <Route path="/portal/:tenantCode" element={<PortalLayout />}>
               <Route index element={<PortalHomePage />} />

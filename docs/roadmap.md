@@ -150,6 +150,26 @@
 
 ---
 
+## V0.3.3 — 商业化交付与租户配置 ✅
+
+**目标：** 从功能 Demo 推进到可出租给企业使用的 SaaS MVP。
+
+**功能：**
+- tenant 表新增门户配置 + 商业化字段（portalTitle, portalDescription, logoUrl, themeColor, portalEnabled, max_knowledge_bases, max_documents, max_ai_daily_calls, expired_at）
+- SUPER_ADMIN 角色 + PLATFORM 租户
+- 平台管理接口（/api/platform/tenants）：租户 CRUD、启用/禁用、重置管理员密码
+- 租户门户配置接口（GET/PUT /api/admin/settings）：企业管理员自定义门户标题、描述、电话、Logo、主题色、启用开关
+- 公开门户配置接口（GET /api/public/{tenantCode}/portal-settings）
+- 租户禁用后端强拦：login 拦截 + JwtAuthenticationFilter 实时校验 tenant.status
+- 公开业务接口（AI chat、报修）校验 tenant.status + portal_enabled
+- 文档上传 max_documents 限额校验
+- 前端企业设置页（/admin/settings）
+- 门户品牌化改造（动态主题色、企业名称、Logo、描述）
+- 门户停用提示页 + 企业不存在错误页
+- 部署交付文档（.env.example、docker-compose.prod.yml、deployment.md、backup.md）
+
+---
+
 ## V0.4 — 功能增强（规划中）
 
 **规划功能：**

@@ -30,6 +30,20 @@ export interface RepairResponse {
   message: string;
 }
 
+export interface PortalConfig {
+  name: string;
+  portalTitle: string;
+  portalDescription: string;
+  contactPhone: string;
+  logoUrl: string;
+  themeColor: string;
+  portalEnabled: boolean;
+}
+
+/** 获取门户配置（公开接口，无需登录） */
+export const getPortalSettings = (tenantCode: string): Promise<PortalConfig> =>
+  http.get(`/api/public/${tenantCode}/portal-settings`);
+
 /** AI 智能客服 */
 export const aiChat = (tenantCode: string, data: AiChatRequest): Promise<AiChatResponse> =>
   http.post(`/api/public/${tenantCode}/ai/chat`, data);

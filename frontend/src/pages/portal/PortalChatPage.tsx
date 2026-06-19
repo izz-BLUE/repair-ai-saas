@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RobotOutlined, SendOutlined, UserOutlined, FormOutlined, BookOutlined, LoadingOutlined } from '@ant-design/icons';
 import { aiChat, type AiChatResponse } from '../../api/portal';
+import { usePortalConfig, useThemeColor } from '../../contexts/PortalConfigContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,6 +23,8 @@ const PortalChatPage: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const basePath = `/portal/${tenantCode}`;
+  const config = usePortalConfig();
+  const themeColor = useThemeColor();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -97,9 +100,9 @@ const PortalChatPage: React.FC = () => {
             <div style={{ textAlign: 'center', padding: '60px 20px 40px' }}>
               <div style={{
                 width: 72, height: 72, borderRadius: 24, margin: '0 auto 20px',
-                background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+                background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 8px 24px rgba(13,148,136,0.2)',
+                boxShadow: `0 8px 24px ${themeColor}33`,
               }}>
                 <RobotOutlined style={{ fontSize: 32, color: '#fff' }} />
               </div>
@@ -107,7 +110,7 @@ const PortalChatPage: React.FC = () => {
                 你好，我是 AI 客服 👋
               </h2>
               <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 32px', lineHeight: 1.6 }}>
-                描述您遇到的问题，我会先尝试从知识库中为您解答。<br />
+                {config.portalTitle ? `欢迎来到${config.portalTitle}，` : ''}描述您遇到的问题，我会先尝试从知识库中为您解答。<br />
                 如果无法解决，我会引导您提交报修。
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
@@ -122,9 +125,9 @@ const PortalChatPage: React.FC = () => {
                       transition: 'all 0.2s',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#0d9488';
-                      e.currentTarget.style.color = '#0d9488';
-                      e.currentTarget.style.background = '#f0fdfa';
+                      e.currentTarget.style.borderColor = themeColor;
+                      e.currentTarget.style.color = themeColor;
+                      e.currentTarget.style.background = `${themeColor}10`;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = '#e2e8f0';
@@ -149,13 +152,13 @@ const PortalChatPage: React.FC = () => {
               {/* 头像 */}
               <div style={{
                 width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                background: msg.role === 'user' ? '#0d9488' : '#f0fdfa',
+                background: msg.role === 'user' ? themeColor : `${themeColor}10`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: msg.role === 'user' ? 'none' : '1px solid #ccfbf1',
+                border: msg.role === 'user' ? 'none' : `1px solid ${themeColor}30`,
               }}>
                 {msg.role === 'user'
                   ? <UserOutlined style={{ color: '#fff', fontSize: 16 }} />
-                  : <RobotOutlined style={{ color: '#0d9488', fontSize: 16 }} />
+                  : <RobotOutlined style={{ color: themeColor, fontSize: 16 }} />
                 }
               </div>
 
@@ -163,7 +166,7 @@ const PortalChatPage: React.FC = () => {
               <div style={{ maxWidth: '80%', minWidth: 0 }}>
                 <div style={{
                   padding: '12px 16px', borderRadius: 16,
-                  background: msg.role === 'user' ? '#0d9488' : '#fff',
+                  background: msg.role === 'user' ? themeColor : '#fff',
                   color: msg.role === 'user' ? '#fff' : '#0f172a',
                   fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                   borderTopLeftRadius: msg.role === 'assistant' ? 4 : 16,
@@ -182,8 +185,8 @@ const PortalChatPage: React.FC = () => {
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '3px 10px', borderRadius: 12,
-                        background: '#f0fdfa', border: '1px solid #ccfbf1',
-                        fontSize: 11, color: '#0f766e', fontWeight: 500,
+                        background: `${themeColor}10`, border: `1px solid ${themeColor}30`,
+                        fontSize: 11, color: `${themeColor}cc`, fontWeight: 500,
                       }}>
                         <BookOutlined />
                         已参考 {msg.meta.matchedItemCount} 条知识库资料
@@ -225,16 +228,16 @@ const PortalChatPage: React.FC = () => {
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                background: '#f0fdfa', border: '1px solid #ccfbf1',
+                background: `${themeColor}10`, border: `1px solid ${themeColor}30`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <RobotOutlined style={{ color: '#0d9488', fontSize: 16 }} />
+                <RobotOutlined style={{ color: themeColor, fontSize: 16 }} />
               </div>
               <div style={{
                 padding: '14px 18px', borderRadius: 16, borderTopLeftRadius: 4,
                 background: '#fff', border: '1px solid #e2e8f0',
               }}>
-                <LoadingOutlined style={{ color: '#0d9488', fontSize: 16 }} />
+                <LoadingOutlined style={{ color: themeColor, fontSize: 16 }} />
                 <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: 13 }}>正在思考...</span>
               </div>
             </div>
@@ -277,7 +280,7 @@ const PortalChatPage: React.FC = () => {
             style={{
               width: 42, height: 42, borderRadius: 12,
               border: 'none', flexShrink: 0,
-              background: input.trim() && !loading ? '#0d9488' : '#e2e8f0',
+              background: input.trim() && !loading ? themeColor : '#e2e8f0',
               color: '#fff', fontSize: 16, cursor: input.trim() && !loading ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.2s',

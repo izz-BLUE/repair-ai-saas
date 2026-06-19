@@ -28,7 +28,7 @@ jobs:
 
       - name: Verify Flyway migrations exist
         run: |
-          for f in V1__init_schema.sql V2__add_customer_unique_constraint.sql V3__add_knowledge_tables.sql V4__add_ai_tables.sql V5__add_knowledge_document.sql; do
+          for f in V1__init_schema.sql V2__add_customer_unique_constraint.sql V3__add_knowledge_tables.sql V4__add_ai_tables.sql V5__add_knowledge_document.sql V6__add_tenant_portal_and_platform.sql; do
             if [ ! -f "backend-java/src/main/resources/db/migration/$f" ]; then
               echo "MISSING: $f"
               exit 1

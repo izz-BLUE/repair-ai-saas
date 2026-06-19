@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, theme, Avatar, Dropdown, Typography } from 'antd';
 import {
-  BookOutlined,
-  FileTextOutlined,
-  UploadOutlined,
-  RobotOutlined,
-  DashboardOutlined,
+  ShopOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
   UserOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
@@ -18,16 +13,10 @@ const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { key: '/admin/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-  { key: '/admin/knowledge-bases', icon: <BookOutlined />, label: '知识库' },
-  { key: '/admin/knowledge-items', icon: <FileTextOutlined />, label: '知识条目' },
-  { key: '/admin/documents', icon: <UploadOutlined />, label: '文档管理' },
-  { key: '/admin/ai-conversations', icon: <RobotOutlined />, label: 'AI 对话' },
-  { type: 'divider' as const },
-  { key: '/admin/settings', icon: <SettingOutlined />, label: '企业设置' },
+  { key: '/platform/tenants', icon: <ShopOutlined />, label: '租户管理' },
 ];
 
-const AdminLayout: React.FC = () => {
+const PlatformLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,7 +26,8 @@ const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    const role = JSON.parse(localStorage.getItem('user') || '{}').role;
+    if (!token || role !== 'SUPER_ADMIN') {
       navigate('/admin/login');
     }
   }, [navigate]);
@@ -47,9 +37,6 @@ const AdminLayout: React.FC = () => {
     localStorage.removeItem('user');
     navigate('/admin/login');
   };
-
-  // 获取当前页面标题
-  const currentPageTitle = menuItems.find((m) => m.key === location.pathname)?.label || '管理后台';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -77,10 +64,10 @@ const AdminLayout: React.FC = () => {
           padding: collapsed ? 0 : '0 20px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}>
-          <RobotOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#60a5fa' }} />
+          <ShopOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#f59e0b' }} />
           {!collapsed && (
             <span style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginLeft: 10, letterSpacing: -0.5 }}>
-              Repair AI
+              平台管理
             </span>
           )}
         </div>
@@ -113,7 +100,7 @@ const AdminLayout: React.FC = () => {
               onClick={() => setCollapsed(!collapsed)}
               style={{ color: '#64748b' }}
             />
-            <Text style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>{currentPageTitle}</Text>
+            <Text style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>租户管理</Text>
           </div>
           <Dropdown
             menu={{
@@ -123,14 +110,11 @@ const AdminLayout: React.FC = () => {
             }}
             placement="bottomRight"
           >
-            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 8, transition: 'background 0.15s' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <Avatar size={32} icon={<UserOutlined />} style={{ background: '#2563eb' }} />
+            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 8 }}>
+              <Avatar size={32} icon={<UserOutlined />} style={{ background: '#f59e0b' }} />
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{user.realName || user.username}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.role}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>SUPER_ADMIN</div>
               </div>
             </div>
           </Dropdown>
@@ -150,4 +134,4 @@ const AdminLayout: React.FC = () => {
   );
 };
 
-export default AdminLayout;
+export default PlatformLayout;

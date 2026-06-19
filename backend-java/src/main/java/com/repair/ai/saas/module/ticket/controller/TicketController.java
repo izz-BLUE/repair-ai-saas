@@ -5,6 +5,7 @@ import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
+import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.ticket.entity.RepairTicket;
 import com.repair.ai.saas.module.ticket.entity.TicketStatusLog;
@@ -161,6 +162,15 @@ public class TicketController {
             @PathVariable String tenantCode,
             @Valid @RequestBody RepairRequest req) {
         var tenant = tenantService.getByTenantCode(tenantCode);
+
+        // 校验租户状态和门户启用状态
+        if (!"ACTIVE".equals(tenant.getStatus())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
+        }
+        if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
+        }
+
         RepairTicket ticket = ticketService.publicRepairRequest(tenant.getId(),
                 req.name, req.phone, req.address, req.productType, req.faultDescription);
         return ApiResponse.success(Map.of(

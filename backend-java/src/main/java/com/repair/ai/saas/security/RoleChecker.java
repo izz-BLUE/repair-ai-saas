@@ -39,4 +39,13 @@ public final class RoleChecker {
             throw new BusinessException(ResultCode.FORBIDDEN, "权限不足，仅师傅可操作");
         }
     }
+
+    /**
+     * 仅 SUPER_ADMIN 可操作（平台管理接口）
+     */
+    public static void requireSuperAdmin(CurrentUser user) {
+        if (user == null || !user.isSuperAdmin()) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "权限不足，仅平台管理员可操作");
+        }
+    }
 }

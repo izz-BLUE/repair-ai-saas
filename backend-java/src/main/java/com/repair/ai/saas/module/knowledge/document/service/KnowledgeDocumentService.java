@@ -13,6 +13,8 @@ import com.repair.ai.saas.module.knowledge.entity.KnowledgeItem;
 import com.repair.ai.saas.module.knowledge.enums.KnowledgeStatus;
 import com.repair.ai.saas.module.knowledge.mapper.KnowledgeBaseMapper;
 import com.repair.ai.saas.module.knowledge.mapper.KnowledgeItemMapper;
+import com.repair.ai.saas.module.tenant.entity.Tenant;
+import com.repair.ai.saas.module.tenant.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +42,7 @@ public class KnowledgeDocumentService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final DocumentParseService parseService;
     private final AiClient aiClient;
+    private final TenantService tenantService;
 
     @Value("${app.upload.base-dir:data/uploads}")
     private String uploadBaseDir;
@@ -54,6 +57,19 @@ public class KnowledgeDocumentService {
                                     MultipartFile file, Long userId) {
         // 1. 校验知识库属于当前租户
         validateKnowledgeBase(tenantId, knowledgeBaseId);
+
+        // 1.5 校验文档数量限制
+        Tenant tenant = tenantService.getById(tenantId);
+        if (tenant != null && tenant.getMaxDocuments() != null) {
+            Long docCount = documentMapper.selectCount(
+                    new LambdaQueryWrapper<KnowledgeDocument>()
+                            .eq(KnowledgeDocument::getTenantId, tenantId)
+                            .eq(KnowledgeDocument::getDeleted, 0));
+            if (docCount >= tenant.getMaxDocuments()) {
+                throw new BusinessException(ResultCode.BAD_REQUEST,
+                        "文档数量已达上限（" + tenant.getMaxDocuments() + "），请联系平台管理员");
+            }
+        }
 
         // 2. 校验文件
         validateFile(file);

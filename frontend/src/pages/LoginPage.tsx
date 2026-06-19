@@ -18,7 +18,12 @@ const LoginPage: React.FC = () => {
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result));
       message.success(`欢迎回来，${result.realName || result.username}`);
-      navigate('/admin/dashboard');
+      // SUPER_ADMIN 跳转平台管理，普通角色跳转管理后台
+      if (result.role === 'SUPER_ADMIN') {
+        navigate('/platform/tenants');
+      } else {
+        navigate('/admin/dashboard');
+      }
     } catch {
       // http interceptor already shows error
     } finally {

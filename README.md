@@ -222,7 +222,8 @@ pytest tests/ -v
 | V0.3.0 | 文档上传解析（txt/md → knowledge_item → Qdrant） | ✅ |
 | V0.3.1 | 前端管理后台（React + Ant Design 5） | ✅ |
 | V0.3.2 | 企业服务门户（AI 客服 / 报修 / 查询占位） | ✅ |
-| V0.4 | 师傅端 H5 / 限流 / 部署 | 📋 |
+| V0.3.3 | 商业化交付（租户配置、平台管理、门户品牌化、部署文档） | ✅ |
+| V0.4 | 师傅端 H5 / 限流 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
@@ -265,10 +266,14 @@ pytest tests/ -v
 - [面试表达](docs/interview.md)
 - [版本路线](docs/roadmap.md)
 - [产品文档](docs/product.md)
+- [部署文档](docs/deployment.md)
+- [备份与恢复](docs/backup.md)
 
 ## 安全说明
 
 `POST /api/public/{tenantCode}/repair-requests` 无需认证即可访问。当前演示版本未做 IP 限流。生产环境需补充：IP 限流、验证码、单租户频率限制。
+
+**默认平台管理员账号：** 企业编码 `PLATFORM`，用户名 `superadmin`，密码 `Admin@2024`。**生产部署后务必立即修改密码。**
 
 ## License
 

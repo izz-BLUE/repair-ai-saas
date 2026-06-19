@@ -22,6 +22,24 @@ public class Tenant {
 
     private String address;
 
+    private String portalTitle;
+
+    private String portalDescription;
+
+    private String logoUrl;
+
+    private String themeColor;
+
+    private Boolean portalEnabled;
+
+    private Integer maxKnowledgeBases;
+
+    private Integer maxDocuments;
+
+    private Integer maxAiDailyCalls;
+
+    private LocalDateTime expiredAt;
+
     private String status;
 
     @TableField(fill = FieldFill.INSERT)

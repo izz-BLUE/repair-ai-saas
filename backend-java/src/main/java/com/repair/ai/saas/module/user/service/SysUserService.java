@@ -59,6 +59,11 @@ public class SysUserService {
     public LoginResult login(String tenantCode, String username, String password) {
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
 
+        // 租户状态校验
+        if (!"ACTIVE".equals(tenant.getStatus())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业已被禁用，请联系平台管理员");
+        }
+
         SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getTenantId, tenant.getId())
@@ -223,19 +228,48 @@ public class SysUserService {
         return tech;
     }
 
+    // ---------- 平台管理 ----------
+
+    /**
+     * 重置租户 ADMIN 密码（平台管理专用）
+     */
+    public void resetAdminPassword(Long tenantId, String newPassword) {
+        SysUser admin = sysUserMapper.selectOne(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getTenantId, tenantId)
+                        .eq(SysUser::getRole, Role.ADMIN.name())
+                        .eq(SysUser::getDeleted, 0)
+                        .last("LIMIT 1")
+        );
+        if (admin == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "该租户下无管理员账号");
+        }
+        admin.setPassword(passwordEncoder.encode(newPassword));
+        sysUserMapper.updateById(admin);
+    }
+
     // ---------- 认证专用：查活跃用户 ----------
 
     /**
      * 用于 JwtAuthenticationFilter 实时校验。
-     * 返回 null 表示用户不存在 / 已禁用 / 已删除 / tenantId 不匹配。
+     * 返回 null 表示用户不存在 / 已禁用 / 已删除 / tenantId 不匹配 / 租户已禁用。
      */
     public SysUser getActiveUserForAuth(Long userId, Long tenantId) {
-        return sysUserMapper.selectOne(
+        SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getId, userId)
                         .eq(SysUser::getTenantId, tenantId)
                         .eq(SysUser::getStatus, "ACTIVE")
         );
+        if (user == null) {
+            return null;
+        }
+        // 校验租户状态：租户被禁用后，该租户下所有用户均不可登录
+        Tenant tenant = tenantService.getById(tenantId);
+        if (tenant == null || !"ACTIVE".equals(tenant.getStatus())) {
+            return null;
+        }
+        return user;
     }
 
     // ---------- 登录结果 DTO ----------

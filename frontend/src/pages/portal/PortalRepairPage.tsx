@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircleOutlined, ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons';
 import { submitRepair, type RepairResponse } from '../../api/portal';
+import { useThemeColor } from '../../contexts/PortalConfigContext';
 
 const PortalRepairPage: React.FC = () => {
   const { tenantCode } = useParams<{ tenantCode: string }>();
   const navigate = useNavigate();
+  const themeColor = useThemeColor();
 
   const [form, setForm] = useState({
     name: '', phone: '', address: '', productType: '', faultDescription: '',
@@ -60,10 +62,10 @@ const PortalRepairPage: React.FC = () => {
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 24, margin: '0 auto 20px',
-            background: '#f0fdfa', border: '2px solid #0d9488',
+            background: `${themeColor}10`, border: `2px solid ${themeColor}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <CheckCircleOutlined style={{ fontSize: 36, color: '#0d9488' }} />
+            <CheckCircleOutlined style={{ fontSize: 36, color: themeColor }} />
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>
             报修已提交
@@ -81,7 +83,7 @@ const PortalRepairPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#64748b', fontSize: 13 }}>当前状态</span>
-              <span style={{ color: '#0d9488', fontSize: 13, fontWeight: 600 }}>待处理</span>
+              <span style={{ color: themeColor, fontSize: 13, fontWeight: 600 }}>待处理</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -99,7 +101,7 @@ const PortalRepairPage: React.FC = () => {
               onClick={() => navigate(`${basePath}/chat`)}
               style={{
                 padding: '10px 24px', borderRadius: 10,
-                border: 'none', background: '#0d9488',
+                border: 'none', background: themeColor,
                 color: '#fff', fontSize: 14, cursor: 'pointer', fontWeight: 500,
               }}
             >
@@ -237,7 +239,7 @@ const PortalRepairPage: React.FC = () => {
             disabled={loading}
             style={{
               width: '100%', height: 48, borderRadius: 12,
-              border: 'none', background: '#0d9488', color: '#fff',
+              border: 'none', background: themeColor, color: '#fff',
               fontSize: 15, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
               opacity: loading ? 0.7 : 1, fontFamily: 'inherit',
             }}

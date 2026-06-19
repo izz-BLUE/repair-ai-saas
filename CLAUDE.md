@@ -63,13 +63,14 @@ backend-java/src/main/java/com/repair/ai/saas/
 ├── dto/             # PageResponse 等通用 DTO
 ├── security/        # JWT 工具, UserContext, @CurrentUserInfo 注解, JwtAuthenticationFilter
 └── module/
-    ├── tenant/      # 企业注册、租户码生成
+    ├── tenant/      # 企业注册、租户码生成、门户配置管理
     ├── user/        # 员工 CRUD、登录
     ├── customer/    # 客户管理（同租户手机号自动合并）
     ├── ticket/      # 工单（核心模块），含 enums/ (TicketStatus, TicketPriority)
     ├── knowledge/   # FAQ 知识库 + 文档上传解析
     ├── ai/          # AI 问答 + 对话记录
-    └── operation/   # 操作日志，含 enums/ (OperationType, Role)
+    ├── operation/   # 操作日志，含 enums/ (OperationType, Role)
+    └── platform/    # 平台管理（SUPER_ADMIN 专用）
 
 frontend/src/
 ├── api/             # Axios 封装（http.ts）+ API 函数（auth/knowledge/documents/ai）
@@ -92,8 +93,8 @@ CANCELLED  CANCELLED              CLOSED
 **认证与鉴权**：
 - `JwtAuthenticationFilter` 解析 Authorization header，将用户信息存入 `UserContext`（ThreadLocal）
 - `@CurrentUserInfo` 注解自动注入当前用户到 Controller 参数
-- 角色：ADMIN（管理员）、DISPATCHER（客服/调度）、TECHNICIAN（师傅）
-- API 路径按角色分组：`/api/admin/`、`/api/technician/`、`/api/common/`、`/api/public/`
+- 角色：SUPER_ADMIN（平台管理员）、ADMIN（租户管理员）、DISPATCHER（客服/调度）、TECHNICIAN（师傅）
+- API 路径按角色分组：`/api/platform/`（SUPER_ADMIN）、`/api/admin/`、`/api/technician/`、`/api/common/`、`/api/public/`
 
 **统一响应**：所有接口返回 `ApiResponse<T>`，包含 code/message/data。
 

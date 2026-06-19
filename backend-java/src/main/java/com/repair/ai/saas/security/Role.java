@@ -1,6 +1,7 @@
 package com.repair.ai.saas.security;
 
 public enum Role {
+    SUPER_ADMIN,
     ADMIN,
     DISPATCHER,
     TECHNICIAN;

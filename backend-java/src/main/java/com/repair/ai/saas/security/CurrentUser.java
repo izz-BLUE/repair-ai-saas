@@ -27,4 +27,15 @@ public class CurrentUser {
     public boolean isAdminOrDispatcher() {
         return isAdmin() || isDispatcher();
     }
+
+    public boolean isSuperAdmin() {
+        return Role.SUPER_ADMIN.name().equals(role);
+    }
+
+    /**
+     * 平台管理员：SUPER_ADMIN 可访问平台接口
+     */
+    public boolean isPlatformAdmin() {
+        return isSuperAdmin();
+    }
 }

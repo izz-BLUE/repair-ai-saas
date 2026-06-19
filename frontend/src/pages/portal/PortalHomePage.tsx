@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { RobotOutlined, FormOutlined, SearchOutlined, ArrowRightOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { usePortalConfig, useThemeColor } from '../../contexts/PortalConfigContext';
 
 const PortalHomePage: React.FC = () => {
   const { tenantCode } = useParams<{ tenantCode: string }>();
   const navigate = useNavigate();
   const [question, setQuestion] = useState('');
+  const config = usePortalConfig();
+  const themeColor = useThemeColor();
 
   const basePath = `/portal/${tenantCode}`;
 
@@ -25,8 +28,8 @@ const PortalHomePage: React.FC = () => {
       icon: <RobotOutlined />,
       label: 'AI 智能客服',
       desc: '输入问题，AI 即时解答',
-      color: '#0d9488',
-      bg: '#f0fdfa',
+      color: themeColor,
+      bg: `${themeColor}10`,
       path: '/chat',
     },
     {
@@ -60,9 +63,9 @@ const PortalHomePage: React.FC = () => {
       <div style={{ textAlign: 'center', marginBottom: 48, maxWidth: 560, width: '100%' }}>
         <div style={{
           width: 64, height: 64, borderRadius: 20, margin: '0 auto 20px',
-          background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+          background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 8px 24px rgba(13,148,136,0.25)',
+          boxShadow: `0 8px 24px ${themeColor}40`,
         }}>
           <RobotOutlined style={{ fontSize: 28, color: '#fff' }} />
         </div>
@@ -71,10 +74,10 @@ const PortalHomePage: React.FC = () => {
           fontSize: 28, fontWeight: 700, color: '#0f172a', margin: '0 0 8px',
           letterSpacing: -0.5, lineHeight: 1.3,
         }}>
-          需要帮助？
+          {config.portalTitle || '需要帮助？'}
         </h1>
         <p style={{ fontSize: 15, color: '#64748b', margin: '0 0 32px', lineHeight: 1.6 }}>
-          描述您遇到的问题，AI 先尝试解答。无法解决时，我们帮您安排维修。
+          {config.portalDescription || '描述您遇到的问题，AI 先尝试解答。无法解决时，我们帮您安排维修。'}
         </p>
 
         {/* 搜索/提问框 */}
@@ -91,8 +94,8 @@ const PortalHomePage: React.FC = () => {
               transition: 'border-color 0.2s, box-shadow 0.2s',
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = '#0d9488';
-              e.target.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.1)';
+              e.target.style.borderColor = themeColor;
+              e.target.style.boxShadow = `0 0 0 3px ${themeColor}1a`;
             }}
             onBlur={(e) => {
               e.target.style.borderColor = '#e2e8f0';
@@ -106,7 +109,7 @@ const PortalHomePage: React.FC = () => {
               position: 'absolute', right: 8, top: 8,
               width: 40, height: 40, borderRadius: 12,
               border: 'none', cursor: question.trim() ? 'pointer' : 'default',
-              background: question.trim() ? '#0d9488' : '#e2e8f0',
+              background: question.trim() ? themeColor : '#e2e8f0',
               color: '#fff', fontSize: 16,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.2s',
@@ -129,9 +132,9 @@ const PortalHomePage: React.FC = () => {
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.color = '#0d9488';
-                e.currentTarget.style.background = '#f0fdfa';
+                e.currentTarget.style.borderColor = themeColor;
+                e.currentTarget.style.color = themeColor;
+                e.currentTarget.style.background = `${themeColor}10`;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#e2e8f0';
@@ -188,11 +191,11 @@ const PortalHomePage: React.FC = () => {
       {/* 流程说明 */}
       <div style={{
         marginTop: 48, display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 24px', borderRadius: 12, background: '#f0fdfa',
-        border: '1px solid #ccfbf1',
+        padding: '12px 24px', borderRadius: 12, background: `${themeColor}10`,
+        border: `1px solid ${themeColor}30`,
       }}>
-        <ThunderboltOutlined style={{ color: '#0d9488', fontSize: 16 }} />
-        <span style={{ fontSize: 13, color: '#0f766e', fontWeight: 500 }}>
+        <ThunderboltOutlined style={{ color: themeColor, fontSize: 16 }} />
+        <span style={{ fontSize: 13, color: `${themeColor}cc`, fontWeight: 500 }}>
           AI 优先解答常见问题，无法解决时自动引导您提交报修，工程师快速响应
         </span>
       </div>

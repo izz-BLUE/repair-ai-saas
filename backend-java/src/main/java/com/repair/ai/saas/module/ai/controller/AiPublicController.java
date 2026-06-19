@@ -1,6 +1,8 @@
 package com.repair.ai.saas.module.ai.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.ai.service.AiService;
 import com.repair.ai.saas.module.ai.service.AiService.AiChatResult;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
@@ -29,6 +31,14 @@ public class AiPublicController {
             @Valid @RequestBody AiChatRequest req) {
         // 根据 tenantCode 找租户
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
+
+        // 校验租户状态和门户启用状态
+        if (!"ACTIVE".equals(tenant.getStatus())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
+        }
+        if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
+        }
 
         AiChatResult result = aiService.chat(
                 tenant.getId(),

@@ -134,6 +134,33 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | GET | `/api/admin/ai/conversations` | 对话列表（分页） |
 | GET | `/api/admin/ai/conversations/{id}` | 对话详情（含消息列表） |
 
+### 企业设置
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/admin/settings` | 获取当前租户门户配置 |
+| PUT | `/api/admin/settings` | 更新门户配置（portalTitle/portalDescription/contactPhone/logoUrl/themeColor/portalEnabled） |
+
+### 门户配置（公开）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/public/{tenantCode}/portal-settings` | 公开门户配置（无需登录） |
+
+---
+
+## 平台管理接口（需 SUPER_ADMIN）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/platform/tenants` | 租户列表（分页，排除 PLATFORM） |
+| POST | `/api/platform/tenants` | 创建租户（自动生成 tenantCode + ADMIN 账号） |
+| GET | `/api/platform/tenants/{id}` | 租户详情 |
+| PUT | `/api/platform/tenants/{id}` | 编辑租户（基础信息 + 限额） |
+| POST | `/api/platform/tenants/{id}/enable` | 启用租户 |
+| POST | `/api/platform/tenants/{id}/disable` | 禁用租户 |
+| POST | `/api/platform/tenants/{id}/reset-admin-password` | 重置管理员密码 |
+
 ---
 
 ## 师傅端接口（需 TECHNICIAN）
