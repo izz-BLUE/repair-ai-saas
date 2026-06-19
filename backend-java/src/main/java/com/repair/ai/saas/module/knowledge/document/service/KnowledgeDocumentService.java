@@ -118,6 +118,16 @@ public class KnowledgeDocumentService {
 
     public Page<KnowledgeDocument> list(Long tenantId, int page, int size,
                                          Long knowledgeBaseId, String parseStatus) {
+        // 校验 parseStatus 合法性
+        if (parseStatus != null && !parseStatus.isBlank()) {
+            try {
+                DocumentParseStatus.valueOf(parseStatus.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                        "无效的解析状态: " + parseStatus + "，可选值: PENDING/SUCCESS/FAILED");
+            }
+        }
+
         Page<KnowledgeDocument> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<KnowledgeDocument> wrapper = new LambdaQueryWrapper<KnowledgeDocument>()
                 .eq(KnowledgeDocument::getTenantId, tenantId);
