@@ -325,6 +325,7 @@ bash deploy/scripts/init-demo-data.sh
 - [备份与恢复](docs/backup.md)
 - [试点客户交付](docs/trial-customer-onboarding.md)
 - [套餐与限额](docs/pricing-and-limits.md)
+- [共享服务器部署](docs/shared-server-deployment.md)
 
 ## 安全说明
 
