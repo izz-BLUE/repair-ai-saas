@@ -5,12 +5,14 @@ import {
   FileTextOutlined,
   UploadOutlined,
   RobotOutlined,
+  ToolOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { listKnowledgeBases, listKnowledgeItems } from '../api/knowledge';
 import { listDocuments } from '../api/documents';
 import { listConversations } from '../api/ai';
+import { getDashboardStats, type DashboardStats } from '../api/tickets';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -19,9 +21,20 @@ interface StatState {
   itemCount: number;
   docCount: number;
   convCount: number;
+  ticketCount: number;
 }
 
 const modules = [
+  {
+    title: '工单管理',
+    desc: '管理客户报修工单，跟踪从派单到完成的全流程',
+    icon: <ToolOutlined />,
+    path: '/admin/tickets',
+    color: '#0ea5e9',
+    bg: '#f0f9ff',
+    statKey: 'ticketCount' as keyof StatState,
+    statLabel: '个工单',
+  },
   {
     title: '知识库',
     desc: '管理 FAQ 知识库，按产品和故障分类组织知识内容',
@@ -66,23 +79,31 @@ const modules = [
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<StatState>({ kbCount: 0, itemCount: 0, docCount: 0, convCount: 0 });
+  const [stats, setStats] = useState<StatState>({ kbCount: 0, itemCount: 0, docCount: 0, convCount: 0, ticketCount: 0 });
+  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [kb, items, docs, convs] = await Promise.allSettled([
+        const [kb, items, docs, convs, dash] = await Promise.allSettled([
           listKnowledgeBases({ page: 1, size: 1 }),
           listKnowledgeItems({ page: 1, size: 1 }),
           listDocuments({ page: 1, size: 1 }),
           listConversations({ page: 1, size: 1 }),
+          getDashboardStats(),
         ]);
         setStats({
           kbCount: kb.status === 'fulfilled' ? kb.value.total : 0,
           itemCount: items.status === 'fulfilled' ? items.value.total : 0,
           docCount: docs.status === 'fulfilled' ? docs.value.total : 0,
           convCount: convs.status === 'fulfilled' ? convs.value.total : 0,
+          ticketCount: dash.status === 'fulfilled'
+            ? (dash.value.todayNewTickets + dash.value.pendingTickets + dash.value.processingTickets + dash.value.completedTickets)
+            : 0,
         });
+        if (dash.status === 'fulfilled') {
+          setDashStats(dash.value);
+        }
       } catch {
         // ignore
       }
@@ -97,10 +118,36 @@ const DashboardPage: React.FC = () => {
         <Text style={{ color: '#64748b' }}>维修团队管理概览</Text>
       </div>
 
-      {/* 统计卡片 */}
+      {/* 工单管道统计 */}
+      {dashStats && (
+        <Row gutter={16} style={{ marginBottom: 20 }}>
+          {[
+            { label: '今日新增', value: dashStats.todayNewTickets, color: '#2563eb', bg: '#eff6ff' },
+            { label: '待处理', value: dashStats.pendingTickets, color: '#f59e0b', bg: '#fffbeb' },
+            { label: '处理中', value: dashStats.processingTickets, color: '#8b5cf6', bg: '#f5f3ff' },
+            { label: '已完成', value: dashStats.completedTickets, color: '#10b981', bg: '#ecfdf5' },
+          ].map((item) => (
+            <Col xs={12} sm={6} key={item.label}>
+              <Card
+                size="small"
+                style={{ borderRadius: 10, border: '1px solid #e2e8f0' }}
+                styles={{ body: { padding: '14px 18px' } }}
+              >
+                <Statistic
+                  value={item.value}
+                  suffix={<span style={{ fontSize: 12, color: '#94a3b8' }}>{item.label}</span>}
+                  styles={{ content: { fontSize: 22, fontWeight: 700, lineHeight: 1, color: item.color } }}
+                />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      {/* 模块统计卡片 */}
       <Row gutter={16} style={{ marginBottom: 28 }}>
         {modules.map((m) => (
-          <Col xs={12} sm={6} key={m.statKey}>
+          <Col xs={12} sm={m.statKey === 'ticketCount' ? 24 : 6} key={m.statKey}>
             <Card
               size="small"
               style={{ borderRadius: 10, border: '1px solid #e2e8f0' }}

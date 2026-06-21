@@ -27,6 +27,7 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | POST | `/api/public/register` | 企业注册（自动创建 ADMIN 账号） |
 | POST | `/api/public/login` | 员工登录（返回 JWT） |
 | POST | `/api/public/{tenantCode}/repair-requests` | 客户报修（自动创建客户 + 工单） |
+| GET | `/api/public/{tenantCode}/tickets/query` | 公开工单查询（需工单号+手机号） |
 | POST | `/api/public/{tenantCode}/ai/chat` | AI 售后问答 |
 
 ### AI 问答请求示例
@@ -53,6 +54,65 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
   }
 }
 ```
+  ]
+}
+```
+
+### 公开工单查询
+
+`GET /api/public/{tenantCode}/tickets/query?ticketNo=xxx&phone=xxx`
+
+**查询参数：**
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| ticketNo | 是 | 工单编号（如 TK202606210001） |
+| phone | 是 | 客户手机号（需与报修时填写的一致） |
+
+**安全约束：**
+- 租户不存在 → 404
+- 租户禁用 / portal 未启用 / 已到期 → 403
+- 工单不存在或手机号不匹配 → 返回相同错误，防止手机号枚举
+- 返回数据脱敏：手机号 138****5678，地址前 6 字 + ***
+
+**响应示例：**
+
+```json
+{
+  "code": "SUCCESS",
+  "data": {
+    "ticketNo": "TK202606210001",
+    "productType": "空调",
+    "faultDescription": "不制冷，开机后外机不转",
+    "status": "ASSIGNED",
+    "statusLabel": "已派单",
+    "priority": "NORMAL",
+    "customerName": "张三",
+    "customerPhone": "138****5678",
+    "serviceAddress": "广东省佛山市顺德***",
+    "createdAt": "2026-06-21T10:30:00",
+    "scheduledTime": "2026-06-21T14:00:00",
+    "startTime": null,
+    "completionTime": null,
+    "technicianName": "李师傅",
+    "technicianPhone": "139****9012",
+    "statusLogs": [
+      {
+        "toStatus": "PENDING",
+        "toStatusLabel": "待处理",
+        "remark": "客户报修",
+        "createdAt": "2026-06-21T10:30:00"
+      },
+      {
+        "toStatus": "ASSIGNED",
+        "toStatusLabel": "已派单",
+        "remark": "派单给师傅",
+        "createdAt": "2026-06-21T10:35:00"
+      }
+    ]
+  }
+}
+```
 
 ---
 
@@ -70,6 +130,7 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | PUT | `/api/admin/tickets/{id}/reassign` | 改派（换师傅） |
 | PUT | `/api/admin/tickets/{id}/cancel` | 取消工单 |
 | PUT | `/api/admin/tickets/{id}/close` | 关闭工单 |
+| GET | `/api/admin/dashboard/stats` | 工单统计（今日新增/待处理/处理中/已完成/AI对话数） |
 
 ### 客户管理
 
@@ -125,7 +186,7 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 | `/portal/:tenantCode` | 企业服务首页（AI 客服入口 + 报修入口 + 查询入口） |
 | `/portal/:tenantCode/chat` | AI 智能客服（调用 `POST /api/public/{tenantCode}/ai/chat`） |
 | `/portal/:tenantCode/repair` | 提交报修表单（调用 `POST /api/public/{tenantCode}/repair-requests`） |
-| `/portal/:tenantCode/query` | 查询进度（占位，后续版本开放） |
+| `/portal/:tenantCode/query` | 查询进度（输入工单号+手机号查询维修状态） |
 
 ### AI 对话记录
 

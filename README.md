@@ -28,7 +28,8 @@
 | 知识库 | FAQ 知识库 + 知识条目 CRUD |
 | 文档上传 | 上传 txt/md 自动解析为知识条目（V0.3） |
 | AI 问答 | 基于 Qdrant 向量检索的 RAG 问答 |
-| 企业门户 | 客户自助服务：AI 客服 / 提交报修 / 查询进度（V0.3.2） |
+| 工单闭环 | 公开查询 + 后台管理 + Dashboard 统计（V0.4.0） |
+| 企业门户 | 客户自助服务：AI 客服 / 提交报修 / 查询进度（V0.4.0） |
 | 操作日志 | 关键操作全记录 |
 
 ## 技术架构
@@ -162,7 +163,7 @@ http://localhost:3000/portal/{tenantCode}
 | `/portal/:tenantCode` | 企业服务首页（AI 客服入口 + 报修入口） |
 | `/portal/:tenantCode/chat` | AI 智能客服（调用公开 API，无需登录） |
 | `/portal/:tenantCode/repair` | 提交报修（自动创建客户 + 工单） |
-| `/portal/:tenantCode/query` | 查询进度（占位，后续版本开放） |
+| `/portal/:tenantCode/query` | 查询进度（输入工单号+手机号查询维修状态） |
 
 > 复用已有公开接口 `POST /api/public/{tenantCode}/ai/chat` 和 `POST /api/public/{tenantCode}/repair-requests`，不需要 JWT，前端通过 URL 参数传入 tenantCode。
 
@@ -225,7 +226,8 @@ pytest tests/ -v
 | V0.3.3 | 商业化交付（租户配置、平台管理、门户品牌化、部署文档） | ✅ |
 | V0.3.4 | 商业化安全（到期拦截、随机密码、AI 限额、修改密码、知识库限额） | ✅ |
 | V0.3.5 | 试点客户部署包（部署脚本、演示数据、备份恢复、交付文档） | ✅ |
-| V0.4 | 师傅端 H5 / 限流 | 📋 |
+| V0.4.0 | 工单闭环增强（公开查询 / 后台管理 / Dashboard 统计） | ✅ |
+| V0.4.1+ | 师傅端 H5 / 限流 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 

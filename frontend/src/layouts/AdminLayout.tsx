@@ -12,6 +12,7 @@ import {
   UserOutlined,
   SettingOutlined,
   KeyOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -25,6 +26,7 @@ const menuItems = [
   { key: '/admin/knowledge-items', icon: <FileTextOutlined />, label: '知识条目' },
   { key: '/admin/documents', icon: <UploadOutlined />, label: '文档管理' },
   { key: '/admin/ai-conversations', icon: <RobotOutlined />, label: 'AI 对话' },
+  { key: '/admin/tickets', icon: <ToolOutlined />, label: '工单管理' },
   { type: 'divider' as const },
   { key: '/admin/settings', icon: <SettingOutlined />, label: '企业设置' },
 ];
