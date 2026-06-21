@@ -33,5 +33,8 @@ backups/
 # Frontend build
 frontend/dist/
 
+# Dev tools
+.tools/
+
 # Playwright test artifacts
 .playwright-mcp/
