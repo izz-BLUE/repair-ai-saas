@@ -397,7 +397,12 @@ public class TicketService {
             return null;
         }
         try {
-            return sysUserService.getUserById(tenantId, technicianId);
+            SysUser tech = sysUserService.getUserById(tenantId, technicianId);
+            // 已禁用用户不返回
+            if (!"ACTIVE".equals(tech.getStatus())) {
+                return null;
+            }
+            return tech;
         } catch (BusinessException e) {
             return null;
         }
