@@ -52,3 +52,32 @@ export const aiChat = (tenantCode: string, data: AiChatRequest): Promise<AiChatR
 /** 提交报修 */
 export const submitRepair = (tenantCode: string, data: RepairRequest): Promise<RepairResponse> =>
   http.post(`/api/public/${tenantCode}/repair-requests`, data);
+
+/** 公开工单查询结果 */
+export interface TicketQueryResult {
+  ticketNo: string;
+  productType: string;
+  faultDescription: string;
+  status: string;
+  statusLabel: string;
+  priority: string;
+  customerName: string;
+  customerPhone: string;
+  serviceAddress: string;
+  createdAt: string;
+  scheduledTime: string | null;
+  startTime: string | null;
+  completionTime: string | null;
+  technicianName: string | null;
+  technicianPhone: string | null;
+  statusLogs: {
+    toStatus: string;
+    toStatusLabel: string;
+    remark: string;
+    createdAt: string;
+  }[];
+}
+
+/** 公开工单查询 */
+export const queryTicket = (tenantCode: string, ticketNo: string, phone: string): Promise<TicketQueryResult> =>
+  http.get(`/api/public/${tenantCode}/tickets/query`, { params: { ticketNo, phone } });

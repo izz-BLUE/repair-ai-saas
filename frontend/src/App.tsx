@@ -11,6 +11,7 @@ import KnowledgeItemPage from './pages/KnowledgeItemPage';
 import DocumentPage from './pages/DocumentPage';
 import AiConversationPage from './pages/AiConversationPage';
 import TenantSettingsPage from './pages/TenantSettingsPage';
+import TicketPage from './pages/TicketPage';
 import PlatformLayout from './layouts/PlatformLayout';
 import PlatformTenantsPage from './pages/platform/PlatformTenantsPage';
 import PortalLayout from './layouts/PortalLayout';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
               <Route path="knowledge-items" element={<KnowledgeItemPage />} />
               <Route path="documents" element={<DocumentPage />} />
               <Route path="ai-conversations" element={<AiConversationPage />} />
+              <Route path="tickets" element={<TicketPage />} />
               <Route path="settings" element={<TenantSettingsPage />} />
             </Route>
             <Route path="/platform" element={<PlatformLayout />}>
