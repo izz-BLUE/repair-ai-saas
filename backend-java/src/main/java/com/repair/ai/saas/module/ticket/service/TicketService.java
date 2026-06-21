@@ -12,6 +12,7 @@ import com.repair.ai.saas.module.ticket.enums.TicketPriority;
 import com.repair.ai.saas.module.ticket.enums.TicketStatus;
 import com.repair.ai.saas.module.ticket.mapper.RepairTicketMapper;
 import com.repair.ai.saas.module.ticket.mapper.TicketStatusLogMapper;
+import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.module.user.service.SysUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -21,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -368,5 +371,76 @@ public class TicketService {
         log.setOperatorId(operatorId);
         log.setRemark(remark);
         statusLogMapper.insert(log);
+    }
+
+    // ---------- 公开查询：按 ticketNo 查工单 ----------
+
+    public RepairTicket getTicketByTicketNo(Long tenantId, String ticketNo) {
+        RepairTicket ticket = ticketMapper.selectOne(
+                new LambdaQueryWrapper<RepairTicket>()
+                        .eq(RepairTicket::getTenantId, tenantId)
+                        .eq(RepairTicket::getTicketNo, ticketNo)
+        );
+        if (ticket == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在或手机号不匹配");
+        }
+        return ticket;
+    }
+
+    // ---------- 安全获取师傅信息（不存在返回 null） ----------
+
+    /**
+     * 获取师傅信息，已删除/禁用/不存在时返回 null。
+     */
+    public SysUser getTechnicianSafe(Long tenantId, Long technicianId) {
+        if (technicianId == null) {
+            return null;
+        }
+        try {
+            return sysUserService.getUserById(tenantId, technicianId);
+        } catch (BusinessException e) {
+            return null;
+        }
+    }
+
+    // ---------- Dashboard 统计 ----------
+
+    public Map<String, Object> getDashboardStats(Long tenantId) {
+        Map<String, Object> stats = new HashMap<>();
+
+        // 今日新增工单
+        Long todayNew = ticketMapper.selectCount(
+                new LambdaQueryWrapper<RepairTicket>()
+                        .eq(RepairTicket::getTenantId, tenantId)
+                        .ge(RepairTicket::getCreatedAt, LocalDate.now().atStartOfDay())
+        );
+        stats.put("todayNewTickets", todayNew);
+
+        // 待处理
+        Long pending = ticketMapper.selectCount(
+                new LambdaQueryWrapper<RepairTicket>()
+                        .eq(RepairTicket::getTenantId, tenantId)
+                        .eq(RepairTicket::getStatus, TicketStatus.PENDING.name())
+        );
+        stats.put("pendingTickets", pending);
+
+        // 处理中（已派单 + 处理中）
+        Long processing = ticketMapper.selectCount(
+                new LambdaQueryWrapper<RepairTicket>()
+                        .eq(RepairTicket::getTenantId, tenantId)
+                        .in(RepairTicket::getStatus,
+                                TicketStatus.ASSIGNED.name(), TicketStatus.IN_PROGRESS.name())
+        );
+        stats.put("processingTickets", processing);
+
+        // 已完成
+        Long completed = ticketMapper.selectCount(
+                new LambdaQueryWrapper<RepairTicket>()
+                        .eq(RepairTicket::getTenantId, tenantId)
+                        .eq(RepairTicket::getStatus, TicketStatus.COMPLETED.name())
+        );
+        stats.put("completedTickets", completed);
+
+        return stats;
     }
 }

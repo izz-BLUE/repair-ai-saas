@@ -2,14 +2,20 @@ package com.repair.ai.saas.module.ticket.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.PhoneMasker;
 import com.repair.ai.saas.common.ResultCode;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.repair.ai.saas.module.ai.entity.AiConversation;
+import com.repair.ai.saas.module.ai.mapper.AiConversationMapper;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.ticket.entity.RepairTicket;
 import com.repair.ai.saas.module.ticket.entity.TicketStatusLog;
+import com.repair.ai.saas.module.ticket.enums.TicketStatus;
 import com.repair.ai.saas.module.ticket.service.TicketService;
+import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
 import com.repair.ai.saas.security.RoleChecker;
@@ -18,9 +24,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +41,7 @@ public class TicketController {
     private final TicketService ticketService;
     private final TenantService tenantService;
     private final OperationLogService operationLogService;
+    private final AiConversationMapper aiConversationMapper;
 
     // ==================== 管理后台接口 ====================
 
@@ -155,6 +166,28 @@ public class TicketController {
         return ApiResponse.success(ticketService.getStatusLogs(currentUser.getTenantId(), id));
     }
 
+    // ==================== Dashboard 统计接口 ====================
+
+    @GetMapping("/api/admin/dashboard/stats")
+    public ApiResponse<Map<String, Object>> getDashboardStats(
+            @CurrentUserInfo CurrentUser currentUser) {
+        RoleChecker.requireAdminOrDispatcher(currentUser);
+        Long tenantId = currentUser.getTenantId();
+
+        // 工单统计（4 个指标）
+        Map<String, Object> stats = ticketService.getDashboardStats(tenantId);
+
+        // 今日 AI 对话数
+        Long todayAiChats = aiConversationMapper.selectCount(
+                new LambdaQueryWrapper<AiConversation>()
+                        .eq(AiConversation::getTenantId, tenantId)
+                        .ge(AiConversation::getCreatedAt, LocalDate.now().atStartOfDay())
+        );
+        stats.put("todayAiChats", todayAiChats);
+
+        return ApiResponse.success(stats);
+    }
+
     // ==================== 公开报修接口 ====================
 
     @PostMapping("/api/public/{tenantCode}/repair-requests")
@@ -182,6 +215,89 @@ public class TicketController {
                 "status", ticket.getStatus(),
                 "message", "报修已提交，请妥善保管工单编号以便查询进度"
         ));
+    }
+
+    // ==================== 公开工单查询接口 ====================
+
+    @GetMapping("/api/public/{tenantCode}/tickets/query")
+    public ApiResponse<Map<String, Object>> publicQueryTicket(
+            @PathVariable String tenantCode,
+            @RequestParam String ticketNo,
+            @RequestParam String phone) {
+
+        // 手动校验参数
+        if (!StringUtils.hasText(ticketNo)) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR, "工单号不能为空");
+        }
+        if (!StringUtils.hasText(phone)) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR, "手机号不能为空");
+        }
+
+        // 租户校验（与公开报修一致）
+        var tenant = tenantService.getByTenantCode(tenantCode);
+        if (!"ACTIVE".equals(tenant.getStatus())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
+        }
+        if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
+        }
+        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
+        }
+
+        // 查询工单（tenantId + ticketNo 隔离）
+        RepairTicket ticket = ticketService.getTicketByTicketNo(tenant.getId(), ticketNo.trim());
+
+        // 手机号比对（trim 后比较，不匹配返回与"不存在"相同的错误）
+        if (!phone.trim().equals(ticket.getCustomerPhone())) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在或手机号不匹配");
+        }
+
+        // 获取状态日志
+        List<TicketStatusLog> logs = ticketService.getStatusLogs(tenant.getId(), ticket.getId());
+
+        // 构建状态日志列表（脱敏，不暴露 operatorId）
+        List<Map<String, Object>> timeline = new ArrayList<>();
+        for (TicketStatusLog log : logs) {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("toStatus", log.getToStatus());
+            TicketStatus ts = TicketStatus.fromString(log.getToStatus());
+            entry.put("toStatusLabel", ts != null ? ts.getLabel() : log.getToStatus());
+            entry.put("remark", log.getRemark());
+            entry.put("createdAt", log.getCreatedAt());
+            timeline.add(entry);
+        }
+
+        // 构建脱敏返回数据
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("ticketNo", ticket.getTicketNo());
+        data.put("productType", ticket.getProductType());
+        data.put("faultDescription", ticket.getFaultDescription());
+        data.put("status", ticket.getStatus());
+        TicketStatus statusEnum = TicketStatus.fromString(ticket.getStatus());
+        data.put("statusLabel", statusEnum != null ? statusEnum.getLabel() : ticket.getStatus());
+        data.put("priority", ticket.getPriority());
+        data.put("customerName", ticket.getCustomerName());
+        data.put("customerPhone", PhoneMasker.maskPhone(ticket.getCustomerPhone()));
+        data.put("serviceAddress", PhoneMasker.maskAddress(ticket.getServiceAddress()));
+        data.put("createdAt", ticket.getCreatedAt());
+        data.put("scheduledTime", ticket.getScheduledTime());
+        data.put("startTime", ticket.getStartTime());
+        data.put("completionTime", ticket.getCompletionTime());
+
+        // 师傅信息（已派单时返回，不存在/已删除返回 null）
+        SysUser tech = ticketService.getTechnicianSafe(tenant.getId(), ticket.getTechnicianId());
+        if (tech != null) {
+            data.put("technicianName", tech.getRealName());
+            data.put("technicianPhone", PhoneMasker.maskPhone(tech.getPhone()));
+        } else {
+            data.put("technicianName", null);
+            data.put("technicianPhone", null);
+        }
+
+        data.put("statusLogs", timeline);
+
+        return ApiResponse.success(data);
     }
 
     // ==================== 师傅端接口 ====================
