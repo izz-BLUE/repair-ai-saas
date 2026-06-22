@@ -4,7 +4,6 @@
     "pages/portal/chat/chat",
     "pages/portal/repair/repair",
     "pages/portal/query/query",
-    "pages/portal/ticket-detail/ticket-detail",
     "pages/technician/login/login",
     "pages/technician/tickets/tickets",
     "pages/technician/ticket-detail/ticket-detail",
