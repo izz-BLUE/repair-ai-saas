@@ -277,7 +277,7 @@ public class TicketService {
 
     @Transactional
     public void completeTicket(Long tenantId, Long ticketId, Long technicianId,
-                               String repairResult, String costNote, String partsNote) {
+                               String repairResult, String costNote, String partsNote, String remark) {
         RepairTicket ticket = getTicketById(tenantId, ticketId);
 
         if (ticket.getTechnicianId() == null || !ticket.getTechnicianId().equals(technicianId)) {
@@ -297,8 +297,9 @@ public class TicketService {
         ticket.setCompletionTime(LocalDateTime.now());
         ticketMapper.updateById(ticket);
 
+        String logRemark = (remark != null && !remark.isBlank()) ? remark : "维修完成";
         writeStatusLog(tenantId, ticketId, currentStatus.name(),
-                TicketStatus.COMPLETED.name(), technicianId, "维修完成");
+                TicketStatus.COMPLETED.name(), technicianId, logRemark);
     }
 
     // ---------- 取消工单 ----------

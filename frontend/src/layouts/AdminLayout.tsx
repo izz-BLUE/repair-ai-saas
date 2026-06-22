@@ -44,6 +44,11 @@ const AdminLayout: React.FC = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/admin/login');
+      return;
+    }
+    // 师傅角色不允许进入管理后台
+    if (user.role === 'TECHNICIAN') {
+      navigate('/technician/tickets');
     }
   }, [navigate]);
 

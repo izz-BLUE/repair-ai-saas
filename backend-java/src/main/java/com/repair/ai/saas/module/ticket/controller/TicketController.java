@@ -354,7 +354,7 @@ public class TicketController {
                                              HttpServletRequest request) {
         RoleChecker.requireTechnician(currentUser);
         ticketService.completeTicket(currentUser.getTenantId(), id,
-                currentUser.getUserId(), req.repairResult, req.costNote, req.partsNote);
+                currentUser.getUserId(), req.repairResult, req.costNote, req.partsNote, req.remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), OperationType.COMPLETE.name(), "TICKET",
                 String.valueOf(id), "提交维修完成", request.getRemoteAddr());
@@ -396,6 +396,7 @@ public class TicketController {
     public record CompleteRequest(
             @NotBlank String repairResult,
             String costNote,
-            String partsNote
+            String partsNote,
+            String remark
     ) {}
 }

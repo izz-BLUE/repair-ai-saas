@@ -12,6 +12,9 @@ import DocumentPage from './pages/DocumentPage';
 import AiConversationPage from './pages/AiConversationPage';
 import TenantSettingsPage from './pages/TenantSettingsPage';
 import TicketPage from './pages/TicketPage';
+import TechnicianLayout from './layouts/TechnicianLayout';
+import TechnicianTicketsPage from './pages/technician/TechnicianTicketsPage';
+import TechnicianTicketDetailPage from './pages/technician/TechnicianTicketDetailPage';
 import PlatformLayout from './layouts/PlatformLayout';
 import PlatformTenantsPage from './pages/platform/PlatformTenantsPage';
 import PortalLayout from './layouts/PortalLayout';
@@ -88,6 +91,11 @@ const App: React.FC = () => {
               <Route path="chat" element={<PortalChatPage />} />
               <Route path="repair" element={<PortalRepairPage />} />
               <Route path="query" element={<PortalQueryPage />} />
+            </Route>
+            <Route path="/technician" element={<TechnicianLayout />}>
+              <Route index element={<Navigate to="/technician/tickets" replace />} />
+              <Route path="tickets" element={<TechnicianTicketsPage />} />
+              <Route path="tickets/:id" element={<TechnicianTicketDetailPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/admin/login" replace />} />
           </Routes>
