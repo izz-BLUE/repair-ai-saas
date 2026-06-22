@@ -22,35 +22,35 @@
       <view class="form-header-desc">填写以下信息，我们会尽快安排维修师傅处理</view>
     </view>
 
-    <!-- 产品类型 -->
+    <!-- 产品类型 — 标签选择 -->
     <view class="form-group">
       <view class="form-label form-label--required">产品类型</view>
-      <picker
-        mode="selector"
-        range="{{productTypes}}"
-        range-key="label"
-        value="{{productTypeIndex}}"
-        bindchange="onProductTypeChange"
-      >
-        <view class="form-picker {{productTypeIndex === -1 ? 'form-picker--placeholder' : ''}}">
-          {{productTypeIndex === -1 ? '请选择产品类型' : productTypes[productTypeIndex].label}}
-          <view class="form-picker-arrow">▼</view>
+      <view class="product-type-group">
+        <view
+          wx:for="{{productTypes}}"
+          wx:key="value"
+          class="product-type-tag {{form.productType === item.value ? 'product-type-tag--active' : ''}}"
+          style="{{form.productType === item.value ? 'border-color:' + themeColor + '; background:' + themeColor + '10; color:' + themeColor + ';' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onProductTypeTap"
+        >
+          {{item.label}}
         </view>
-      </picker>
+      </view>
       <view wx:if="{{errors.productType}}" class="form-error">{{errors.productType}}</view>
     </view>
 
-    <!-- 姓名 -->
+    <!-- 联系人 -->
     <view class="form-group">
       <view class="form-label form-label--required">联系人</view>
       <input
         class="form-input"
-        value="{{customerName}}"
+        value="{{form.name}}"
         placeholder="请输入您的姓名"
-        bindinput="onFieldInput"
-        data-field="customerName"
+        bindinput="handleInput"
+        data-field="name"
       />
-      <view wx:if="{{errors.customerName}}" class="form-error">{{errors.customerName}}</view>
+      <view wx:if="{{errors.name}}" class="form-error">{{errors.name}}</view>
     </view>
 
     <!-- 手机号 -->
@@ -60,25 +60,25 @@
         class="form-input"
         type="number"
         maxlength="11"
-        value="{{customerPhone}}"
+        value="{{form.phone}}"
         placeholder="请输入您的手机号码"
-        bindinput="onFieldInput"
-        data-field="customerPhone"
+        bindinput="handleInput"
+        data-field="phone"
       />
-      <view wx:if="{{errors.customerPhone}}" class="form-error">{{errors.customerPhone}}</view>
+      <view wx:if="{{errors.phone}}" class="form-error">{{errors.phone}}</view>
     </view>
 
-    <!-- 地址 -->
+    <!-- 服务地址 -->
     <view class="form-group">
       <view class="form-label form-label--required">服务地址</view>
       <input
         class="form-input"
-        value="{{serviceAddress}}"
+        value="{{form.address}}"
         placeholder="请输入详细服务地址"
-        bindinput="onFieldInput"
-        data-field="serviceAddress"
+        bindinput="handleInput"
+        data-field="address"
       />
-      <view wx:if="{{errors.serviceAddress}}" class="form-error">{{errors.serviceAddress}}</view>
+      <view wx:if="{{errors.address}}" class="form-error">{{errors.address}}</view>
     </view>
 
     <!-- 故障描述 -->
@@ -86,13 +86,13 @@
       <view class="form-label form-label--required">故障描述</view>
       <textarea
         class="form-textarea"
-        value="{{faultDescription}}"
+        value="{{form.faultDescription}}"
         placeholder="请详细描述设备故障现象（如：空调开机不制冷，显示 E2 错误）"
-        bindinput="onFieldInput"
+        bindinput="handleInput"
         data-field="faultDescription"
         maxlength="500"
       />
-      <view class="char-count">{{faultDescription.length}}/500</view>
+      <view class="char-count">{{form.faultDescription.length}}/500</view>
       <view wx:if="{{errors.faultDescription}}" class="form-error">{{errors.faultDescription}}</view>
     </view>
   </view>

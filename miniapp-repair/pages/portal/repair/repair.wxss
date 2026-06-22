@@ -19,25 +19,33 @@
   margin-bottom: var(--spacing-md);
 }
 
-/* Picker 样式 */
-.form-picker {
-  height: 88rpx;
+/* 产品类型标签选择 */
+.product-type-group {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-md);
-  background: #f7f8fa;
-  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.product-type-tag {
+  padding: 18rpx 28rpx;
+  border-radius: var(--radius-sm);
   font-size: var(--font-body);
+  border: 2rpx solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-secondary);
+  transition: all 0.15s;
+  line-height: 1;
 }
 
-.form-picker--placeholder {
-  color: var(--color-text-hint);
+.product-type-tag:active {
+  transform: scale(0.96);
 }
 
-.form-picker-arrow {
-  font-size: 20rpx;
-  color: var(--color-text-hint);
+.product-type-tag--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 /* 字数统计 */

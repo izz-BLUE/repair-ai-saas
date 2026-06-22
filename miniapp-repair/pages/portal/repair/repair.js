@@ -1,6 +1,7 @@
 /**
  * 提交报修页
- * 表单提交到公开报修接口
+ * 表单提交到公开报修接口 POST /api/public/{tenantCode}/repair-requests
+ * 后端 DTO：name, phone, address, productType, faultDescription（均为 String）
  */
 const tenant = require('../../../utils/tenant');
 const request = require('../../../utils/request');
@@ -19,14 +20,33 @@ const PRODUCT_TYPES = [
   { label: '其他', value: 'OTHER' },
 ];
 
+/** 将后端字段错误信息翻译为中文 */
+const ERROR_CN_MAP = {
+  'name': '请输入联系人',
+  'phone': '请输入手机号',
+  'address': '请输入服务地址',
+  'faultDescription': '请填写故障描述',
+};
+
+function toCnError(message) {
+  if (!message) return '请检查表单填写';
+  for (const [field, cn] of Object.entries(ERROR_CN_MAP)) {
+    if (message.includes(field)) return cn;
+  }
+  return message;
+}
+
 Page({
   data: {
     productTypes: PRODUCT_TYPES,
-    productTypeIndex: -1,
-    customerName: '',
-    customerPhone: '',
-    serviceAddress: '',
-    faultDescription: '',
+    // 表单字段，与后端 DTO 完全一致
+    form: {
+      productType: '',
+      name: '',
+      phone: '',
+      address: '',
+      faultDescription: '',
+    },
     errors: {},
     submitting: false,
     submitted: false,
@@ -45,15 +65,21 @@ Page({
     }
   },
 
-  onProductTypeChange(e) {
-    this.setData({ productTypeIndex: parseInt(e.detail.value) });
+  /** 产品类型标签点击 */
+  onProductTypeTap(e) {
+    const { value } = e.currentTarget.dataset;
+    this.setData({ 'form.productType': value });
     this.clearError('productType');
   },
 
-  onFieldInput(e) {
+  /** 输入框 bindinput */
+  handleInput(e) {
     const { field } = e.currentTarget.dataset;
-    this.setData({ [field]: e.detail.value });
-    this.clearError(field);
+    const { value } = e.detail;
+    this.setData({ [`form.${field}`]: value });
+    if (this.data.errors[field]) {
+      this.clearError(field);
+    }
   },
 
   clearError(field) {
@@ -62,26 +88,27 @@ Page({
     this.setData({ errors });
   },
 
-  /** 表单校验 */
+  /** 表单校验（前端拦截） */
   validate() {
+    const { form } = this.data;
     const errors = {};
-    if (this.data.productTypeIndex === -1) {
+    if (!form.productType) {
       errors.productType = '请选择产品类型';
     }
-    if (!this.data.customerName.trim()) {
-      errors.customerName = '请输入联系人姓名';
+    if (!form.name.trim()) {
+      errors.name = '请输入联系人';
     }
-    const phone = this.data.customerPhone.trim();
+    const phone = form.phone.trim();
     if (!phone) {
-      errors.customerPhone = '请输入手机号';
+      errors.phone = '请输入手机号';
     } else if (!/^1[3-9]\d{9}$/.test(phone)) {
-      errors.customerPhone = '请输入正确的手机号';
+      errors.phone = '请输入正确的手机号';
     }
-    if (!this.data.serviceAddress.trim()) {
-      errors.serviceAddress = '请输入服务地址';
+    if (!form.address.trim()) {
+      errors.address = '请输入服务地址';
     }
-    if (!this.data.faultDescription.trim()) {
-      errors.faultDescription = '请描述设备故障';
+    if (!form.faultDescription.trim()) {
+      errors.faultDescription = '请填写设备故障描述';
     }
     this.setData({ errors });
     return Object.keys(errors).length === 0;
@@ -97,19 +124,22 @@ Page({
       return;
     }
 
+    const { form } = this.data;
+
+    // 显式构造 payload，字段与后端 DTO（RepairRequest record）完全一致
+    const payload = {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      productType: form.productType,
+      faultDescription: form.faultDescription.trim(),
+    };
+
     this.setData({ submitting: true });
 
-    const productType = PRODUCT_TYPES[this.data.productTypeIndex];
     const url = tenant.buildPublicUrl(config.api.repairRequest);
 
-    request.post(url, {
-      tenantCode: code,
-      productType: productType.value,
-      customerName: this.data.customerName.trim(),
-      customerPhone: this.data.customerPhone.trim(),
-      serviceAddress: this.data.serviceAddress.trim(),
-      faultDescription: this.data.faultDescription.trim(),
-    }, true)
+    request.post(url, payload, true)
       .then(data => {
         this.setData({
           submitting: false,
@@ -117,8 +147,12 @@ Page({
           ticketNo: (data && data.ticketNo) || '获取中...',
         });
       })
-      .catch(() => {
+      .catch(err => {
         this.setData({ submitting: false });
+        // 如果后端返回字段校验错误，翻译为中文
+        if (err && err.message) {
+          wx.showToast({ title: toCnError(err.message), icon: 'none', duration: 2500 });
+        }
       });
   },
 
