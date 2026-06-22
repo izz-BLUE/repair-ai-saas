@@ -2,12 +2,14 @@ package com.repair.ai.saas.module.ai.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.ai.service.AiService;
 import com.repair.ai.saas.module.ai.service.AiService.AiChatResult;
 import com.repair.ai.saas.module.ai.service.AiUsageService;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
 import com.repair.ai.saas.module.tenant.service.TenantService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +29,17 @@ public class AiPublicController {
     private final AiService aiService;
     private final TenantService tenantService;
     private final AiUsageService aiUsageService;
+    private final RateLimiter rateLimiter;
 
     @PostMapping("/{tenantCode}/ai/chat")
     public ApiResponse<Map<String, Object>> chat(
             @PathVariable String tenantCode,
-            @Valid @RequestBody AiChatRequest req) {
+            @Valid @RequestBody AiChatRequest req,
+            HttpServletRequest request) {
+        // IP 级限流（防 AI 滥用，租户级日限额由 AiUsageService 负责）
+        if (!rateLimiter.checkChatIp(RateLimiter.getClientIp(request))) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
         // 根据 tenantCode 找租户
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
 

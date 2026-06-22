@@ -331,11 +331,34 @@
 
 ---
 
-## V0.5.3 — 小程序运营就绪（计划中）
+## V0.5.3 — 公开接口限流 + 生产部署验证 ✅
 
-- 企业专属小程序码生成
-- 小程序投放方案
-- 试点客户小程序验收文档
+**目标：** 对公开接口实施 Redis 滑动窗口限流，保护登录/报修/查询/AI 聊天不被滥用。
+
+**功能：**
+- 公开接口 Redis 限流落地（4 个端点）
+  - `POST /api/public/login` — IP 限流（1min/5 次）
+  - `POST /api/public/{tenantCode}/repair-requests` — IP + 租户限流（1min/3 次 + 10 次）
+  - `GET /api/public/{tenantCode}/tickets/query` — IP + 租户限流（1min/10 次 + 30 次）
+  - `POST /api/public/{tenantCode}/ai/chat` — IP 限流（1min/5 次，租户日限额由 AiUsageService 负责）
+- RateLimiter 组件（ZSET 滑动窗口 + Lua 脚本）
+- 429 统一响应：code=`TOO_MANY_REQUESTS`, HTTP 429, 不暴露阈值和维度
+- Redis 异常 fail-open（不因 Redis 故障阻塞业务）
+- IP 获取工具：X-Forwarded-For → X-Real-IP → remoteAddr
+- 新增测试 27 个（RateLimiterTest 20 + GlobalExceptionHandlerTest 7），全部通过
+- 生产 docker compose config 验证通过
+- 生产部署验证文档（docs/deployment-verification.md）
+- 限流设计文档更新（标记 V0.5.3 已实现）
+
+**技术：** Java 17 + Spring Data Redis + Lua 脚本
+
+**新增表：** 无
+
+**新增类：** `common/RateLimiter.java`
+
+---
+
+## V0.5.4+ — 后续规划
 
 ---
 

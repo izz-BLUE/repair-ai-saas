@@ -1,6 +1,9 @@
 package com.repair.ai.saas.module.user.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.RateLimiter;
+import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
 import com.repair.ai.saas.module.user.entity.SysUser;
@@ -24,11 +27,17 @@ public class SysUserController {
 
     private final SysUserService sysUserService;
     private final OperationLogService operationLogService;
+    private final RateLimiter rateLimiter;
 
     // ==================== 公开接口 ====================
 
     @PostMapping("/api/public/login")
-    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest req) {
+    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest req,
+                                                   HttpServletRequest request) {
+        // IP 限流（防爆破）
+        if (!rateLimiter.checkLogin(RateLimiter.getClientIp(request))) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
         var result = sysUserService.login(req.tenantCode, req.username, req.password);
         return ApiResponse.success(Map.of(
                 "token", result.token(),

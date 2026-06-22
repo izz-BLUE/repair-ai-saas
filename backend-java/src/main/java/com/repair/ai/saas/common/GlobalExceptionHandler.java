@@ -53,6 +53,7 @@ public class GlobalExceptionHandler {
             case ResultCode.UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
             case ResultCode.FORBIDDEN -> HttpStatus.FORBIDDEN;
             case ResultCode.CONFLICT -> HttpStatus.CONFLICT;
+            case ResultCode.TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

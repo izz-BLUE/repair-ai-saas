@@ -1,7 +1,7 @@
 # Redis 限流设计文档
 
 > 创建日期：2026-06-22
-> 状态：📋 方案设计，暂不实现代码
+> 状态：✅ V0.5.3 已实现
 
 ## 1. 需求
 
@@ -107,13 +107,29 @@ public ApiResponse<?> publicRepair(@PathVariable String tenantCode, ...) {
 }
 ```
 
-## 7. 优先级
+## 7. 优先级与实现状态
+
+| 优先级 | 内容 | 建议版本 | 状态 |
+|--------|------|---------|------|
+| P0 | 登录 IP 限流 | V0.5.3 | ✅ 已实现 |
+| P1 | 报修 IP + 租户限流 | V0.5.3 | ✅ 已实现 |
+| P2 | 查询限流 | V0.5.3 | ✅ 已实现（一并实现） |
+| P3 | AI 聊天 IP 限流 | V0.5.3 | ✅ 已实现（一并实现） |
+
+## 8. V0.5.3 实现要点
+
+- **RateLimiter.java** (`common/RateLimiter`): 核心限流器，ZSET 滑动窗口 + Lua 脚本
+- **member 唯一性**: `now:nanoTime:AtomicLong.sequence` 三段拼接，避免极端冲突
+- **IP 获取**: X-Forwarded-For 第一个 IP → X-Real-IP → remoteAddr，处理 unknown/空串/IPv6
+- **Redis 异常 fail-open**: Redis 不可用时放行请求，不阻塞业务
+- **阈值集中管理**: 所有限流参数定义为 `RateLimiter` 静态常量
+- **429 响应**: code=`TOO_MANY_REQUESTS`, HTTP 429, 不暴露具体阈值或维度
+- **测试**: RateLimiterTest (20 用例) + GlobalExceptionHandlerTest (7 用例), 全部通过
+
+## 9. 后续计划
 
 | 优先级 | 内容 | 建议版本 |
 |--------|------|---------|
-| P0 | 登录 IP 限流（爆破最常见） | V0.5.3 |
-| P1 | 报修 IP + 租户限流 | V0.5.3 |
-| P2 | 查询限流 | V0.5.4 |
-| P3 | AI 聊天限流（已有 daily limit，非最紧急） | V0.5.4 |
-
-> 当前阶段暂不实现代码，仅保留设计方案。V0.5.3 优先实现登录 IP 限流。
+| P4 | 限流阈值可通过配置覆盖 | V0.6.0 |
+| P5 | `/api/public/register` 限流 | V0.5.4+ |
+| P6 | AI 租户级滑动窗口限流（补充现有 DB 日限额） | V0.5.4+ |

@@ -3,6 +3,7 @@ package com.repair.ai.saas.module.ticket.controller;
 import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.PhoneMasker;
+import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.repair.ai.saas.module.ai.entity.AiConversation;
@@ -42,6 +43,7 @@ public class TicketController {
     private final TenantService tenantService;
     private final OperationLogService operationLogService;
     private final AiConversationMapper aiConversationMapper;
+    private final RateLimiter rateLimiter;
 
     // ==================== 管理后台接口 ====================
 
@@ -193,7 +195,16 @@ public class TicketController {
     @PostMapping("/api/public/{tenantCode}/repair-requests")
     public ApiResponse<Map<String, Object>> publicRepair(
             @PathVariable String tenantCode,
-            @Valid @RequestBody RepairRequest req) {
+            @Valid @RequestBody RepairRequest req,
+            HttpServletRequest request) {
+        // IP 级限流（防刷单）
+        if (!rateLimiter.checkRepairIp(RateLimiter.getClientIp(request))) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
+        // 租户级限流（防刷单）
+        if (!rateLimiter.checkRepairTenant(tenantCode)) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
         var tenant = tenantService.getByTenantCode(tenantCode);
 
         // 校验租户状态和门户启用状态
@@ -223,7 +234,17 @@ public class TicketController {
     public ApiResponse<Map<String, Object>> publicQueryTicket(
             @PathVariable String tenantCode,
             @RequestParam String ticketNo,
-            @RequestParam String phone) {
+            @RequestParam String phone,
+            HttpServletRequest request) {
+
+        // IP 级限流（防爬虫）
+        if (!rateLimiter.checkQueryIp(RateLimiter.getClientIp(request))) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
+        // 租户级限流（防爬虫枚举）
+        if (!rateLimiter.checkQueryTenant(tenantCode)) {
+            throw new BusinessException(ResultCode.TOO_MANY_REQUESTS, RateLimiter.RATE_LIMIT_MSG);
+        }
 
         // 手动校验参数
         if (!StringUtils.hasText(ticketNo)) {
