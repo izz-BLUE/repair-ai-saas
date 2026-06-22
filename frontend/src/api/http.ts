@@ -48,9 +48,21 @@ http.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/admin/login';
+      const requestUrl = error.config?.url || '';
+      const isLoginRequest = requestUrl.includes('/api/public/login');
+      const isOnLoginPage = window.location.pathname.includes('/login');
+
+      if (!isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (!isOnLoginPage) {
+          window.location.href = '/admin/login';
+        }
+      }
+
+      // 登录 401 和已在登录页面上的 401：显示错误信息，不跳转
+      const msg = error.response?.data?.message || error.message || '网络错误';
+      showError(msg);
       return Promise.reject(error);
     }
     const msg = error.response?.data?.message || error.message || '网络错误';

@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
         navigate('/admin/dashboard');
       }
     } catch {
-      // http interceptor already shows error
+      // 错误已由 http 拦截器显示，此处只需确保不刷新页面、不清空表单
     } finally {
       setLoading(false);
     }
