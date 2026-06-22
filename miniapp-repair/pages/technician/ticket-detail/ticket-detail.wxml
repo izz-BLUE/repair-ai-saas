@@ -49,7 +49,7 @@
     </view>
     <view class="info-row">
       <view class="info-label">产品类型</view>
-      <view class="info-value">{{ticket.productType || '未填写'}}</view>
+      <view class="info-value">{{ticket.productTypeLabel || '未填写'}}</view>
     </view>
     <view class="info-row">
       <view class="info-label">故障描述</view>

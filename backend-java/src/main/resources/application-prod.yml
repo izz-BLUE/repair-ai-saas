@@ -1,0 +1,44 @@
+# 生产环境配置
+# 所有敏感值通过环境变量注入，不硬编码
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${MYSQL_DATABASE:-repair_ai_saas}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:-root}
+    password: ${MYSQL_ROOT_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  data:
+    redis:
+      host: ${REDIS_HOST:-localhost}
+      port: ${REDIS_PORT:-6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    clean-disabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000
+  ai:
+    agent:
+      url: ${AI_SERVICE_URL:}
+  cors:
+    # 生产环境必须设置具体域名（逗号分隔），否则不允许带 credentials
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+# 生产环境去除 DEBUG 日志
+logging:
+  level:
+    com.repair.ai.saas: INFO
+    org.mybatis: WARN
+
+# 生产关闭 MyBatis SQL 日志输出
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl

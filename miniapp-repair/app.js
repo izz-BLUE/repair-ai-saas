@@ -38,14 +38,26 @@ App({
   },
 
   parseTenantCode(options) {
-    // 方式一：URL query 参数（开发调试用）
-    if (options.query && options.query.tenantCode) {
-      return decodeURIComponent(options.query.tenantCode);
+    // 方式一：URL query 参数（开发调试用），优先级最高
+    if (options.query) {
+      if (options.query.tenantCode) {
+        return decodeURIComponent(options.query.tenantCode);
+      }
+      // 兼容 tc=xxx 短格式
+      if (options.query.tc) {
+        return decodeURIComponent(options.query.tc);
+      }
     }
-    // 方式二：scene 参数（生产推荐）
+    // 方式二：scene 参数（生产推荐，二维码扫码进入）
     if (options.query && options.query.scene) {
       const scene = decodeURIComponent(options.query.scene);
-      const match = scene.match(/tenantCode[=%]3D([^&]+)/);
+      // 支持 scene=tenantCode%3Dxxx (URL encode = 为 %3D)
+      let match = scene.match(/tenantCode[=%]3D([^&]+)/i);
+      if (match) {
+        return decodeURIComponent(match[1]);
+      }
+      // 支持 scene=tc%3Dxxx 或 scene=tc=xxx 短格式
+      match = scene.match(/[&?]?tc[=%]3D([^&]+)/i);
       if (match) {
         return decodeURIComponent(match[1]);
       }

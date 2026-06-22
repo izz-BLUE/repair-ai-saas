@@ -3,6 +3,7 @@ package com.repair.ai.saas.module.tenant.controller;
 import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.user.service.SysUserService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class TenantController {
     private final TenantService tenantService;
 
     @PostMapping("/register")
-    public ApiResponse<Map<String, Object>> register(@RequestBody RegisterRequest req) {
+    public ApiResponse<Map<String, Object>> register(@Valid @RequestBody RegisterRequest req) {
         var result = sysUserService.register(
                 req.tenantName, req.contactName, req.contactPhone,
                 req.username, req.password

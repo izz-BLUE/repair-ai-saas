@@ -37,7 +37,7 @@ public class AiService {
                              String source) {
         String traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
-        log.info("AI chat: tenantId={}, question='{}', traceId={}", tenantId, question, traceId);
+        log.info("AI chat: tenantId={}, traceId={}", tenantId, traceId);
 
         String answer;
         String model;

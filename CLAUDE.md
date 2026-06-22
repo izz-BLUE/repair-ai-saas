@@ -46,7 +46,7 @@ npm run build
 **前端：**
 - React 18 + TypeScript
 - Vite（构建工具，端口 3000）
-- Ant Design 5（UI 组件库）
+- Ant Design 6（UI 组件库）
 - React Router 6（路由）
 - Axios（HTTP 请求，自动携带 Bearer token）
 

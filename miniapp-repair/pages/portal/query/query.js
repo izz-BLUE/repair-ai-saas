@@ -63,6 +63,7 @@ Page({
               ...data,
               statusLabel: statusUtils.getStatusLabel(data.status) || '',
               statusColor: statusUtils.getStatusColor(data.status) || 'pending',
+              productTypeLabel: statusUtils.getProductTypeLabel(data.productType),
             },
           });
         } else {

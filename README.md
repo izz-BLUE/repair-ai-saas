@@ -66,7 +66,7 @@
 |------|------|------|
 | Java 后端 | Spring Boot 3.2 + MyBatis-Plus 3.5 | 业务主服务：工单、客户、权限、知识库管理 |
 | Python Agent | FastAPI + OpenAI SDK | AI 服务：Embedding、向量检索、LLM 问答 |
-| 管理后台 | React 18 + TypeScript + Ant Design 5 | 后台管理 UI：知识库、文档、AI 对话 |
+| 管理后台 | React 18 + TypeScript + Ant Design 6 | 后台管理 UI：知识库、文档、AI 对话 |
 | MySQL 8.0 | Flyway 迁移 | 业务数据持久化（11 张表） |
 | Redis 7 | Spring Data Redis | 缓存 |
 | Qdrant | v1.18.0 | FAQ 向量索引（COSINE 距离） |
@@ -189,7 +189,7 @@ http://localhost:3000/admin/login
 
 | 入口 | 类型 | 角色 | 状态 |
 |------|------|------|------|
-| 小程序 MVP | 客户侧 + 师傅侧原生微信小程序（WXML/WXSS/JS）。见 `miniapp-repair/`（V0.5.0） |
+| `miniapp-repair/` | 原生微信小程序 | 客户 + 师傅 | 🆕 V0.5.0 |
 | `/portal/:tenantCode/*` | H5（响应式） | 客户 | ✅ 已上线 |
 | `/technician/*` | H5（移动端） | 师傅 | ✅ V0.4.2 |
 | `/admin/*` | Web（桌面） | 管理员 | ✅ 已上线 |
@@ -262,7 +262,7 @@ pytest tests/ -v
 | V0.2.3 | 单元测试 + GitHub Actions CI | ✅ |
 | V0.2.4 | 项目文档与面试表达沉淀 | ✅ |
 | V0.3.0 | 文档上传解析（txt/md → knowledge_item → Qdrant） | ✅ |
-| V0.3.1 | 前端管理后台（React + Ant Design 5） | ✅ |
+| V0.3.1 | 前端管理后台（React + Ant Design 6） | ✅ |
 | V0.3.2 | 企业服务门户（AI 客服 / 报修 / 查询占位） | ✅ |
 | V0.3.3 | 商业化交付（租户配置、平台管理、门户品牌化、部署文档） | ✅ |
 | V0.3.4 | 商业化安全（到期拦截、随机密码、AI 限额、修改密码、知识库限额） | ✅ |

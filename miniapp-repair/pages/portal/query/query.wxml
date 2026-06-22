@@ -67,7 +67,7 @@
       <view class="card-title">工单信息</view>
       <view class="info-row">
         <view class="info-label">产品类型</view>
-        <view class="info-value">{{result.productType || '未填写'}}</view>
+        <view class="info-value">{{result.productTypeLabel || '未填写'}}</view>
       </view>
       <view class="info-row">
         <view class="info-label">故障描述</view>

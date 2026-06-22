@@ -45,6 +45,7 @@ Page({
             statusLabel: statusUtils.getStatusLabel(data.ticket.status),
             statusColor: statusUtils.getStatusColor(data.ticket.status),
             priorityLabel: statusUtils.getPriorityLabel(data.ticket.priority),
+            productTypeLabel: statusUtils.getProductTypeLabel(data.ticket.productType),
           };
           const logs = (data.statusLogs || []).map(log => ({
             ...log,
@@ -104,6 +105,7 @@ Page({
     request.put(url, {}, true)
       .then(() => {
         wx.showToast({ title: '已开始处理', icon: 'success' });
+        this.setData({ acting: false });
         setTimeout(() => {
           this.loadTicket();
         }, 800);

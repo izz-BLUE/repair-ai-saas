@@ -9,6 +9,7 @@ import com.repair.ai.saas.module.user.service.SysUserService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
 import com.repair.ai.saas.security.RoleChecker;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,7 @@ public class PlatformTenantController {
      */
     @PostMapping
     public ApiResponse<Map<String, Object>> createTenant(
-            @RequestBody CreateTenantRequest req,
+            @Valid @RequestBody CreateTenantRequest req,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireSuperAdmin(currentUser);
 

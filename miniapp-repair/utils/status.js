@@ -61,6 +61,19 @@ const PRIORITY_LABELS = {
   URGENT: '紧急',
 };
 
+// 产品类型枚举 → 中文标签映射
+const PRODUCT_TYPE_LABELS = {
+  AIR_CONDITIONER: '空调',
+  REFRIGERATOR: '冰箱',
+  WASHING_MACHINE: '洗衣机',
+  WATER_HEATER: '热水器',
+  WATER_PURIFIER: '净水器',
+  RANGE_HOOD: '油烟机',
+  GAS_STOVE: '燃气灶',
+  TELEVISION: '电视',
+  OTHER: '其他',
+};
+
 /**
  * 获取状态标签
  */
@@ -82,6 +95,14 @@ function getPriorityLabel(priority) {
   return PRIORITY_LABELS[priority] || priority || '未知';
 }
 
+/**
+ * 获取产品类型中文标签
+ * 后端返回 AIR_CONDITIONER，显示为"空调"
+ */
+function getProductTypeLabel(productType) {
+  return PRODUCT_TYPE_LABELS[productType] || productType || '未填写';
+}
+
 module.exports = {
   STATUS,
   STATUS_LABELS,
@@ -89,7 +110,9 @@ module.exports = {
   TECHNICIAN_TABS,
   PRIORITY,
   PRIORITY_LABELS,
+  PRODUCT_TYPE_LABELS,
   getStatusLabel,
   getStatusColor,
   getPriorityLabel,
+  getProductTypeLabel,
 };

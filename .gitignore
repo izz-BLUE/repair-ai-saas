@@ -52,3 +52,6 @@ agent-python/.venv.deps-installed
 
 # WeChat DevTools local config
 miniapp-repair/project.private.config.json
+
+# Review artifacts
+*.zip
