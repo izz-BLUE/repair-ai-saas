@@ -3,9 +3,10 @@ package com.repair.ai.saas.common;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -82,33 +83,27 @@ public class RateLimiter {
         String member = now + ":" + System.nanoTime() + ":" + sequence.incrementAndGet();
         long ttlSeconds = Math.max(1, windowMs * 2 / 1000);
 
-        String lua = """
-            local key = KEYS[1]
-            local now = tonumber(ARGV[1])
-            local windowStart = tonumber(ARGV[2])
-            local maxCount = tonumber(ARGV[3])
-            local member = ARGV[4]
-            local ttl = tonumber(ARGV[5])
-            redis.call('ZREMRANGEBYSCORE', key, 0, windowStart)
-            local count = redis.call('ZCARD', key)
-            if count >= maxCount then
-                return 0
-            end
-            redis.call('ZADD', key, now, member)
-            redis.call('EXPIRE', key, ttl)
-            return 1
-            """;
-
         try {
-            DefaultRedisScript<Long> script = new DefaultRedisScript<>(lua, Long.class);
-            Long result = redis.execute(script,
-                    List.of(redisKey),
-                    String.valueOf(now),
-                    String.valueOf(windowStart),
-                    String.valueOf(maxCount),
-                    member,
-                    String.valueOf(ttlSeconds));
-            boolean allowed = result != null && result == 1;
+            // 使用 ZSetOperations 替代 Lua 脚本，避免 Redis 7.4 Lua 类型兼容问题
+            // RedisTemplate SessionCallback 提供事务性保证
+            List<Object> results = redis.execute(new org.springframework.data.redis.core.SessionCallback<List<Object>>() {
+                @Override
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                public List<Object> execute(org.springframework.data.redis.core.RedisOperations operations) {
+                    operations.multi();
+                    operations.opsForZSet().removeRangeByScore(redisKey, 0, windowStart);
+                    operations.opsForZSet().zCard(redisKey);
+                    operations.opsForZSet().add(redisKey, member, now);
+                    operations.expire(redisKey, java.time.Duration.ofSeconds(ttlSeconds));
+                    return operations.exec();
+                }
+            });
+            // results[0] = removeRangeByScore 结果, results[1] = zCard 结果
+            if (results == null || results.size() < 2) {
+                return true; // fail-open
+            }
+            Long count = (Long) results.get(1);
+            boolean allowed = count != null && count < maxCount;
             if (!allowed) {
                 log.warn("Rate limit triggered: key={}, maxCount={}, windowMs={}", redisKey, maxCount, windowMs);
             }

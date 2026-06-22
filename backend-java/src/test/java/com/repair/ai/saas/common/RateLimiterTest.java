@@ -177,11 +177,12 @@ class RateLimiterTest {
     }
 
     @Test
-    @DisplayName("isAllowed: Redis 返回 null 时拒绝")
-    void isAllowed_redisReturnsNull_denied() {
+    @DisplayName("isAllowed: Redis exec 返回 null 时 fail-open 放行")
+    void isAllowed_redisReturnsNull_failOpen() {
         StringRedisTemplate redis = new StubStringRedisTemplate((Long) null);
         RateLimiter limiter = new RateLimiter(redis);
-        assertFalse(limiter.isAllowed("test:key", 5, 60_000));
+        assertTrue(limiter.isAllowed("test:key", 5, 60_000),
+                "Redis 返回 null 时必须 fail-open");
     }
 
     // ==================== 限流消息不暴露细节 ====================
@@ -200,6 +201,7 @@ class RateLimiterTest {
 
     /**
      * Redis Stub：通过构造参数控制返回 Long 值或抛异常。
+     * 适配 RateLimiter 的 SessionCallback 调用方式。
      */
     private static class StubStringRedisTemplate extends StringRedisTemplate {
         private final Long returnValue;
@@ -217,12 +219,19 @@ class RateLimiterTest {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T execute(org.springframework.data.redis.core.script.RedisScript<T> script,
-                             List<String> keys, Object... args) {
+        public <T> T execute(org.springframework.data.redis.core.SessionCallback<T> session) {
             if (exception != null) {
                 throw exception;
             }
-            return (T) returnValue;
+            if (returnValue == null) {
+                return null;
+            }
+            if (returnValue == 1L) {
+                // 模拟 count(0) < max → 允许
+                return (T) List.of(0L, 0L);
+            }
+            // returnValue == 0L: 模拟 count(5) >= max(5) → 拒绝
+            return (T) List.of(0L, 5L);
         }
     }
 }
