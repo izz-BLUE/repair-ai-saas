@@ -226,12 +226,64 @@ JWT 在企业注册或员工登录时返回，有效期 24 小时。
 
 ## 师傅端接口（需 TECHNICIAN）
 
+> 所有师傅端接口需要 TECHNICIAN 角色，且只能操作分配给自己的工单。跨师傅操作返回 403。
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/technician/tickets` | 我的工单列表 |
-| GET | `/api/technician/tickets/{id}` | 工单详情 |
+| GET | `/api/technician/tickets` | 我的工单列表（分页，支持 status 筛选） |
+| GET | `/api/technician/tickets/{id}` | 工单详情（含状态流转日志） |
 | PUT | `/api/technician/tickets/{id}/start` | 开始处理（ASSIGNED → IN_PROGRESS） |
 | PUT | `/api/technician/tickets/{id}/complete` | 提交完成（IN_PROGRESS → COMPLETED） |
+
+### 我的工单列表
+
+`GET /api/technician/tickets?page=1&size=20&status=ASSIGNED`
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| page | 否 | 页码，默认 1 |
+| size | 否 | 每页条数，默认 20 |
+| status | 否 | 状态筛选：ASSIGNED / IN_PROGRESS / COMPLETED / CLOSED 等 |
+
+**安全：** 仅返回 `technician_id = 当前用户 ID` 的工单，tenant_id 自动过滤。
+
+### 工单详情
+
+`GET /api/technician/tickets/{id}`
+
+**安全：** 校验 `ticket.technicianId == 当前用户 ID`，不匹配返回 403 "该工单未分配给您"。
+
+### 开始处理
+
+`PUT /api/technician/tickets/{id}/start`
+
+- 无需 request body
+- 前置校验：technician_id 匹配 + 状态必须为 ASSIGNED
+- 成功后状态变为 IN_PROGRESS，记录 startTime
+
+### 提交完成
+
+`PUT /api/technician/tickets/{id}/complete`
+
+**Request Body:**
+```json
+{
+  "repairResult": "更换压缩机，加氟，已恢复正常制冷",
+  "costNote": "压缩机费用 800 元",
+  "partsNote": "压缩机 ×1",
+  "remark": "客户确认满意"
+}
+```
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| repairResult | 是 | 维修结果描述 |
+| costNote | 否 | 费用说明 |
+| partsNote | 否 | 配件说明 |
+| remark | 否 | 备注（写入状态日志，不填则默认"维修完成"） |
+
+- 前置校验：technician_id 匹配 + 状态必须为 IN_PROGRESS
+- 成功后状态变为 COMPLETED，记录 completionTime
 
 ---
 

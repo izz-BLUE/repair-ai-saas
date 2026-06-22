@@ -24,11 +24,12 @@
 | 客户管理 | 手机号自动合并，地址和历史工单沉淀 |
 | 工单管理 | 创建、派单、改派、取消、关闭 |
 | 工单状态机 | PENDING → ASSIGNED → IN_PROGRESS → COMPLETED → CLOSED |
-| 师傅端 | 接单、开始处理、提交维修结果 |
+| 师傅端 | 移动端 H5：查看工单、开始处理、提交维修结果 |
 | 知识库 | FAQ 知识库 + 知识条目 CRUD |
 | 文档上传 | 上传 txt/md 自动解析为知识条目（V0.3） |
 | AI 问答 | 基于 Qdrant 向量检索的 RAG 问答 |
 | 工单闭环 | 公开查询 + 后台管理 + Dashboard 统计（V0.4.0） |
+| 师傅端 | 移动端 H5 工作台，查看/处理/完成工单（V0.4.2） |
 | 企业门户 | 客户自助服务：AI 客服 / 提交报修 / 查询进度（V0.4.0） |
 | 操作日志 | 关键操作全记录 |
 
@@ -167,6 +168,21 @@ http://localhost:3000/portal/{tenantCode}
 
 > 复用已有公开接口 `POST /api/public/{tenantCode}/ai/chat` 和 `POST /api/public/{tenantCode}/repair-requests`，不需要 JWT，前端通过 URL 参数传入 tenantCode。
 
+### 6. 访问维修师傅工作台
+
+师傅登录后自动进入移动端工作台，使用与管理员相同的登录页面：
+
+```
+http://localhost:3000/admin/login
+```
+
+| 路由 | 功能 |
+|------|------|
+| `/technician/tickets` | 我的工单列表（移动端卡片式） |
+| `/technician/tickets/:id` | 工单详情（客户信息、时间线、开始处理/完成） |
+
+> TECHNICIAN 角色登录后自动跳转 `/technician/tickets`，无法进入管理后台。ADMIN/DISPATCHER 无法进入师傅工作台。
+
 ## 测试与 CI
 
 ### Java 单元测试
@@ -227,7 +243,8 @@ pytest tests/ -v
 | V0.3.4 | 商业化安全（到期拦截、随机密码、AI 限额、修改密码、知识库限额） | ✅ |
 | V0.3.5 | 试点客户部署包（部署脚本、演示数据、备份恢复、交付文档） | ✅ |
 | V0.4.0 | 工单闭环增强（公开查询 / 后台管理 / Dashboard 统计） | ✅ |
-| V0.4.1+ | 师傅端 H5 / 限流 | 📋 |
+| V0.4.2 | 师傅端移动 H5（工单列表 / 开始处理 / 完成维修） | ✅ |
+| V0.4.1+ | 限流 / 通知 | 📋 |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 

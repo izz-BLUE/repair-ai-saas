@@ -240,6 +240,29 @@
 
 ---
 
+## V0.4.2 — 维修师傅移动端 H5 ✅
+
+**目标：** 维修师傅可通过手机登录系统，查看分配给自己的工单，开始处理并完成维修，形成生产可用的售后履约闭环。
+
+**功能：**
+- 师傅端前端路由：/technician/tickets 列表 + /technician/tickets/:id 详情
+- TECHnicianLayout 移动端布局（顶栏 + 角色守卫）
+- 卡片式工单列表（状态筛选：全部/已派单/处理中/已完成/已关闭）
+- 工单详情（客户信息卡片 + 工单信息卡片 + 维修结果卡片 + 状态时间线）
+- 操作按钮：ASSIGNED → 开始处理, IN_PROGRESS → 完成维修
+- 完成维修表单（维修结果必填、配件说明选填、费用说明选填、备注选填）
+- 电话 click-to-call（tel:）+ 地址复制
+- 登录跳转规则：TECHNICIAN → /technician/tickets
+- 前端权限守卫：TECHNICIAN 无法访问 /admin/*，ADMIN 无法访问 /technician/*
+- 后端 completeTicket 支持 remark 参数（写入状态日志）
+- 后端权限完整：requireTechnician() + technicianId 所有权校验 + tenantId 隔离
+
+**新增后端接口：** 无（复用 V0.1 已有 `/api/technician/*`）
+
+**新增前端页面：** 3 个（TechnicianLayout + TicketsPage + TicketDetailPage）
+
+---
+
 ## V1.0 — 可收费版本（规划中）
 
 **目标：** 可以收取 99～299 元/月。
