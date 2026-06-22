@@ -141,6 +141,20 @@ for i in 0 1 2; do
     ok "  条目 $((i+1)): ${TITLES[$i]}"
 done
 
+# ---------- 7.5. 创建师傅测试账号 ----------
+info "创建师傅账号: 李师傅..."
+CREATE_TECH_RESULT=$(curl -s -X POST "$BASE_URL/api/admin/users" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -d '{"realName":"李师傅","phone":"13900005678","username":"technician1","password":"Tech@2024","role":"TECHNICIAN"}')
+
+TECH_ID=$(echo "$CREATE_TECH_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
+if [[ -z "$TECH_ID" ]]; then
+    err "创建师傅账号失败: $CREATE_TECH_RESULT"
+    exit 1
+fi
+ok "师傅账号创建成功 (ID: $TECH_ID, 用户名: technician1, 密码: Tech@2024)"
+
 # ---------- 8. 输出汇总 ----------
 echo ""
 echo "============================================"
@@ -151,6 +165,7 @@ echo "  租户名称: 顺德XX维修服务"
 echo "  租户编码: $TENANT_CODE"
 echo "  管理后台: $BASE_URL/admin/login"
 echo "  管理账号: $ADMIN_USERNAME / $ADMIN_PASSWORD"
+echo "  师傅账号: technician1 / Tech@2024 (角色: TECHNICIAN)"
 echo ""
 echo "  门户地址: $BASE_URL/portal/$TENANT_CODE"
 echo "  AI 客服:  $BASE_URL/portal/$TENANT_CODE/chat"

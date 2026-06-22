@@ -358,7 +358,22 @@
 
 ---
 
-## V0.5.4+ — 后续规划
+## V0.5.4 — 验收准备与演示数据补齐 ✅
+
+**目标：** 为生产环境验收和小程序师傅端验收补齐准备材料。
+
+**变更：**
+- `init-demo-data.sh` 新增师傅测试账号（`technician1 / Tech@2024`，角色 TECHNICIAN）
+- `deployment-verification.md` 补充全流程 smoke test 清单（16 项，标注"待实际执行"）
+- `miniapp-devtools-checklist.md` 更新验收版本号 + 补充 V0.5.2/V0.5.3 已修复项
+
+**技术：** 纯文档 + seed 脚本，无代码变更
+
+**新增表：** 无
+
+---
+
+## V0.5.5+ — 后续规划
 
 ---
 
