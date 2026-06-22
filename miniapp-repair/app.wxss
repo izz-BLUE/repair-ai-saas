@@ -1,0 +1,368 @@
+/**
+ * 售后维修小程序 — 全局样式
+ * 遵循 wechat-miniapp-ui-design skill 规范
+ */
+
+page {
+  /* === 工单状态颜色 === */
+  --color-pending: #faad14;
+  --color-assigned: #1677ff;
+  --color-in-progress: #722ed1;
+  --color-completed: #52c41a;
+  --color-followed-up: #13c2c2;
+  --color-closed: #8c8c8c;
+  --color-cancelled: #ff4d4f;
+
+  /* === 基础色板 === */
+  --color-primary: #1677ff;
+  --color-primary-light: #e6f0ff;
+  --color-success: #52c41a;
+  --color-warning: #faad14;
+  --color-danger: #ff4d4f;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #666666;
+  --color-text-hint: #999999;
+  --color-bg: #f5f5f5;
+  --color-card: #ffffff;
+  --color-border: #e8e8e8;
+  --color-divider: #f0f0f0;
+
+  /* === 圆角 === */
+  --radius-sm: 8rpx;
+  --radius-md: 12rpx;
+  --radius-lg: 16rpx;
+
+  /* === 尺寸 === */
+  --btn-height: 88rpx;
+  --font-title: 32rpx;
+  --font-body: 28rpx;
+  --font-caption: 24rpx;
+
+  /* === 间距 === */
+  --spacing-xs: 8rpx;
+  --spacing-sm: 16rpx;
+  --spacing-md: 24rpx;
+  --spacing-lg: 32rpx;
+  --spacing-xl: 48rpx;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  box-sizing: border-box;
+}
+
+/* === 通用类 === */
+
+/* 页面容器 */
+.page-container {
+  min-height: 100vh;
+  padding: var(--spacing-md);
+  box-sizing: border-box;
+}
+
+.page-container--with-bottom {
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+}
+
+/* 卡片 */
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card--compact {
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid var(--color-border);
+}
+
+/* 主操作按钮 */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--btn-height);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: var(--font-title);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  width: 100%;
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+}
+
+.btn-primary[disabled] {
+  opacity: 0.4;
+}
+
+/* 次要按钮 */
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  background: var(--color-card);
+  color: var(--color-primary);
+  font-size: var(--font-body);
+  border-radius: var(--radius-sm);
+  border: 2rpx solid var(--color-primary);
+  width: 100%;
+}
+
+.btn-secondary:active {
+  background: var(--color-primary-light);
+}
+
+/* 危险操作按钮 */
+.btn-danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--btn-height);
+  background: var(--color-danger);
+  color: #ffffff;
+  font-size: var(--font-title);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  width: 100%;
+}
+
+.btn-danger:active {
+  opacity: 0.85;
+}
+
+/* 底部固定操作栏 */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-bottom: calc(var(--spacing-sm) + env(safe-area-inset-bottom));
+  background: var(--color-card);
+  border-top: 1rpx solid var(--color-border);
+  z-index: 100;
+}
+
+/* 工单状态标签 */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  font-size: 22rpx;
+  border-radius: 32rpx;
+  font-weight: 500;
+}
+
+.tag-pending {
+  background: #fff7e6;
+  color: #d48806;
+}
+
+.tag-assigned {
+  background: #e6f7ff;
+  color: #0958d9;
+}
+
+.tag-in-progress {
+  background: #f9f0ff;
+  color: #531dab;
+}
+
+.tag-completed {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.tag-closed {
+  background: #fafafa;
+  color: #595959;
+}
+
+.tag-cancelled {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+/* 状态圆点 */
+.status-dot {
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+}
+
+.status-dot--pending { background: var(--color-pending); }
+.status-dot--assigned { background: var(--color-assigned); }
+.status-dot--in-progress { background: var(--color-in-progress); }
+.status-dot--completed { background: var(--color-completed); }
+.status-dot--closed { background: var(--color-closed); }
+.status-dot--cancelled { background: var(--color-cancelled); }
+.status-dot--followed-up { background: var(--color-followed-up); }
+
+/* 表单输入框 */
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 var(--spacing-md);
+  background: #f7f8fa;
+  border-radius: var(--radius-md);
+  font-size: var(--font-body);
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 160rpx;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #f7f8fa;
+  border-radius: var(--radius-md);
+  font-size: var(--font-body);
+  box-sizing: border-box;
+}
+
+.form-label {
+  font-size: var(--font-body);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
+  display: block;
+}
+
+.form-label--required::before {
+  content: '* ';
+  color: var(--color-danger);
+}
+
+.form-error {
+  font-size: 24rpx;
+  color: var(--color-danger);
+  margin-top: 4rpx;
+}
+
+/* 加载/空/错误状态 */
+.state-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+}
+
+.state-icon {
+  width: 128rpx;
+  height: 128rpx;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.4;
+}
+
+.state-text {
+  font-size: var(--font-body);
+  color: var(--color-text-hint);
+  margin-bottom: var(--spacing-md);
+}
+
+/* 分割线 */
+.divider {
+  height: 1rpx;
+  background: var(--color-divider);
+  margin: var(--spacing-sm) 0;
+}
+
+/* 时间线 */
+.timeline {
+  position: relative;
+  padding-left: 40rpx;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10rpx;
+  top: 8rpx;
+  bottom: 8rpx;
+  width: 2rpx;
+  background: var(--color-border);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: var(--spacing-md);
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -30rpx;
+  top: 6rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: 2rpx solid #fff;
+}
+
+.timeline-dot--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
+
+.timeline-content {
+  font-size: var(--font-body);
+  color: var(--color-text);
+}
+
+.timeline-time {
+  font-size: var(--font-caption);
+  color: var(--color-text-hint);
+  margin-top: 4rpx;
+}
+
+/* 聊天气泡 */
+.chat-container {
+  padding: var(--spacing-md);
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-body);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-md);
+  word-break: break-all;
+}
+
+.chat-bubble--ai {
+  background: var(--color-card);
+  border: 1rpx solid var(--color-border);
+  border-top-left-radius: 4rpx;
+  align-self: flex-start;
+}
+
+.chat-bubble--user {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-top-right-radius: 4rpx;
+  margin-left: auto;
+}
+
+.chat-row {
+  display: flex;
+  flex-direction: column;
+}

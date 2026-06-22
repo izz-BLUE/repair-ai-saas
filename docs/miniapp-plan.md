@@ -210,3 +210,37 @@ const request = (options) => {
 | Web 平台管理 | 平台管理员唯一入口 | ✅ 不变 |
 
 > 小程序与 H5 共享同一套后端 API，无需额外开发后端接口。小程序上线后，H5 入口仍保留供非微信场景使用。
+
+## 8. V0.5.0 实际目录结构
+
+```
+miniapp-repair/
+├── app.js                     # 应用入口，tenantCode 解析
+├── app.json                   # 页面注册 + 窗口配置
+├── app.wxss                   # 全局样式（CSS 变量、通用类）
+├── project.config.json        # 开发者工具配置（appid: TODO_APPID）
+├── sitemap.json
+├── utils/
+│   ├── config.js              # baseUrl + API 路径
+│   ├── request.js             # wx.request 封装（token/401/business error）
+│   ├── auth.js                # token/user 存储/清除/角色检查
+│   ├── tenant.js              # tenantCode 解析/校验/存储/URL 构建
+│   └── status.js              # 工单状态/优先级 常量/标签/颜色
+├── pages/
+│   ├── portal/                # 客户侧（无需登录）
+│   │   ├── home/              # 品牌头部 + 3 服务入口卡片
+│   │   ├── chat/              # AI 聊天气泡 + 报修引导
+│   │   ├── repair/            # 报修表单 + 成功展示工单号
+│   │   └── query/             # 工单号+手机号查询 + 时间线展示
+│   ├── technician/            # 师傅侧（需 TECHNICIAN 登录）
+│   │   ├── login/             # 企业编码+用户名+密码登录
+│   │   ├── tickets/           # 卡片列表 + Tab 状态筛选
+│   │   ├── ticket-detail/     # 客户/工单/时间线 + 操作按钮
+│   │   └── complete/          # 维修结果表单
+│   └── common/
+│       └── error/             # 通用错误页（含重试/返回首页）
+```
+
+**技术栈：** 原生 WXML + WXSS + JavaScript，无 Taro/uni-app。
+
+**设计规范：** `.claude/skills/wechat-miniapp-ui-design/SKILL.md`

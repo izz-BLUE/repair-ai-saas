@@ -1,0 +1,118 @@
+/* 查询进度页 */
+
+.query-form {
+  padding-top: 20rpx;
+}
+
+.form-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-header-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.form-header-desc {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+/* 结果头部 */
+.result-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.status-badge--pending {
+  background: #fff7e6;
+  color: #d48806;
+}
+
+.status-badge--assigned {
+  background: #e6f7ff;
+  color: #0958d9;
+}
+
+.status-badge--in-progress {
+  background: #f9f0ff;
+  color: #531dab;
+}
+
+.status-badge--completed {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.status-badge--closed {
+  background: #fafafa;
+  color: #595959;
+}
+
+.status-badge--cancelled {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+.result-ticket-no {
+  margin-left: var(--spacing-sm);
+  font-size: 24rpx;
+  font-family: 'Courier New', monospace;
+  color: var(--color-text-hint);
+}
+
+/* 卡片标题 */
+.card-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1rpx solid var(--color-divider);
+}
+
+/* 信息行 */
+.info-row {
+  display: flex;
+  margin-bottom: 12rpx;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  width: 140rpx;
+  font-size: 26rpx;
+  color: var(--color-text-hint);
+  flex-shrink: 0;
+}
+
+.info-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+/* 时间线备注 */
+.timeline-remark {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+  margin-top: 4rpx;
+}

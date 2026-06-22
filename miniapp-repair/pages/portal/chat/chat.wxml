@@ -1,0 +1,69 @@
+<!-- AI 智能咨询页 -->
+<view class="chat-wrapper">
+  <!-- 消息列表 -->
+  <scroll-view
+    class="chat-list"
+    scroll-y
+    scroll-into-view="{{scrollToView}}"
+    scroll-with-animation
+  >
+    <!-- 空状态 -->
+    <view wx:if="{{messages.length === 0 && !loading}}" class="state-center" style="padding-top: 120rpx;">
+      <view class="state-icon">🤖</view>
+      <view class="state-text">您好，我是 AI 智能客服</view>
+      <view class="state-text" style="font-size: 24rpx; margin-top: 4rpx;">请描述您遇到的设备故障，我来帮您诊断</view>
+    </view>
+
+    <block wx:for="{{messages}}" wx:key="id">
+      <view class="chat-row">
+        <!-- AI 消息 -->
+        <view wx:if="{{item.role === 'ai'}}" class="chat-bubble chat-bubble--ai">
+          <view class="bubble-text">{{item.content}}</view>
+          <!-- 匹配到的知识条目 -->
+          <view wx:if="{{item.knowledgeItems && item.knowledgeItems.length > 0}}" class="knowledge-hint">
+            <view class="knowledge-hint-title">📚 相关帮助：</view>
+            <view wx:for="{{item.knowledgeItems}}" wx:key="id" wx:for-item="ki" class="knowledge-item">
+              · {{ki.title}}
+            </view>
+          </view>
+          <!-- 引导报修 -->
+          <view wx:if="{{item.shouldCreateTicket}}" class="repair-prompt" bindtap="goRepair">
+            ⚠️ {{item.repairPrompt || 'AI 无法解决此问题，建议提交报修让师傅上门处理'}}
+            <view class="repair-prompt-btn">立即报修 ›</view>
+          </view>
+        </view>
+        <!-- 用户消息 -->
+        <view wx:elif="{{item.role === 'user'}}" class="chat-bubble chat-bubble--user">
+          {{item.content}}
+        </view>
+        <!-- 加载中 -->
+        <view wx:elif="{{item.role === 'loading'}}" class="chat-bubble chat-bubble--ai">
+          <wx:loading></wx:loading> 思考中...
+        </view>
+      </view>
+    </block>
+
+    <view id="chat-bottom"></view>
+  </scroll-view>
+
+  <!-- 输入栏 -->
+  <view class="chat-input-bar">
+    <input
+      class="chat-input"
+      value="{{inputValue}}"
+      placeholder="描述您遇到的故障..."
+      bindinput="onInput"
+      confirm-type="send"
+      bindconfirm="sendMessage"
+      disabled="{{sending}}"
+    />
+    <button
+      class="chat-send-btn"
+      style="background: {{themeColor}};"
+      bindtap="sendMessage"
+      disabled="{{sending || inputValue === ''}}"
+    >
+      发送
+    </button>
+  </view>
+</view>

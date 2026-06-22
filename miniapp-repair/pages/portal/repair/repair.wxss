@@ -1,0 +1,62 @@
+/* 提交报修页 */
+
+.form-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-header-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.form-header-desc {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Picker 样式 */
+.form-picker {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md);
+  background: #f7f8fa;
+  border-radius: var(--radius-md);
+  font-size: var(--font-body);
+}
+
+.form-picker--placeholder {
+  color: var(--color-text-hint);
+}
+
+.form-picker-arrow {
+  font-size: 20rpx;
+  color: var(--color-text-hint);
+}
+
+/* 字数统计 */
+.char-count {
+  text-align: right;
+  font-size: 22rpx;
+  color: var(--color-text-hint);
+  margin-top: 4rpx;
+}
+
+/* 成功页工单号 */
+.ticket-no-box {
+  font-size: 40rpx;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2rpx;
+  color: var(--color-primary);
+  padding: 8rpx 32rpx;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16rpx;
+}

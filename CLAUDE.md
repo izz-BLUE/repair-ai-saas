@@ -144,3 +144,33 @@ CANCELLED  CANCELLED              CLOSED
 - 使用 `styles.content` 替代废弃的 `valueStyle`
 - 不使用废弃的 `List` 组件（用 div + map 替代）
 - 全局主题 Token 统一在 `App.tsx` 的 `ConfigProvider` 中配置
+
+## 小程序开发规则（V0.5.0+）
+
+### 设计工具
+
+- **所有小程序 UI、页面、布局、视觉优化必须使用 `wechat-miniapp-ui-design` skill。** 不允许绕过该 skill 直接写小程序 UI 代码。
+- 如果 skill 不可用，必须至少遵守 `docs/miniapp-plan.md` 中的小程序 UI 规范。
+- **小程序代码目录：** `miniapp-repair/`，使用原生微信小程序 WXML / WXSS / JavaScript，不使用 Taro / uni-app。
+
+### 安全规则
+
+- **不提交真实 AppID**：`project.config.json` 使用 `touristappid` 或 `TODO_APPID` 占位
+- **不提交真实域名**：`utils/config.js` 使用 `http://localhost:8080` 占位
+- **不提交真实密钥/secret**：永远不写入代码，用注释标注 `<!-- TODO: 生产环境配置 -->`
+- **不调用 admin/platform API**：小程序只调用 `/api/public/` 和 `/api/technician/` 接口
+- **不合并进 eat-what 小程序**：售后维修是独立小程序
+
+### 验收标准
+
+每次小程序改动后：
+
+- [ ] 目录结构完整（app.js / app.json / app.wxss / project.config.json / sitemap.json）
+- [ ] app.json 页面注册完整
+- [ ] 所有页面四件套（WXML / WXSS / JS / JSON）存在
+- [ ] utils/request.js 统一封装 wx.request
+- [ ] 无真实 AppID / 密钥 / 域名（grep 检查）
+- [ ] npm run build 成功（前端 Web 不受影响）
+- [ ] mvn clean test 成功（后端不受影响）
+
+> 当前开发环境可能无法运行微信开发者工具。如果未做微信开发者工具验收，必须明确说明，不要假装通过。

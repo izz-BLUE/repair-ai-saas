@@ -1,0 +1,77 @@
+<!-- 完成工单页 -->
+<view class="page-container page-container--with-bottom">
+  <view class="form-header">
+    <view class="form-header-title">完成维修</view>
+    <view class="form-header-desc">工单号：{{ticketNo}}</view>
+  </view>
+
+  <!-- 维修结果（必填） -->
+  <view class="form-group">
+    <view class="form-label form-label--required">维修结果</view>
+    <textarea
+      class="form-textarea"
+      value="{{repairResult}}"
+      placeholder="请详细描述维修过程和处理结果（如：已更换压缩机，制冷恢复正常）"
+      bindinput="onFieldInput"
+      data-field="repairResult"
+      maxlength="500"
+    />
+    <view class="char-count">{{repairResult.length}}/500</view>
+    <view wx:if="{{errors.repairResult}}" class="form-error">{{errors.repairResult}}</view>
+  </view>
+
+  <!-- 配件说明（选填） -->
+  <view class="form-group">
+    <view class="form-label">配件说明</view>
+    <textarea
+      class="form-textarea"
+      value="{{partsNote}}"
+      placeholder="如更换了配件，请列出配件名称和数量（选填）"
+      bindinput="onFieldInput"
+      data-field="partsNote"
+      maxlength="300"
+    />
+    <view class="char-count">{{partsNote.length}}/300</view>
+  </view>
+
+  <!-- 费用说明（选填） -->
+  <view class="form-group">
+    <view class="form-label">费用说明</view>
+    <textarea
+      class="form-textarea"
+      value="{{costNote}}"
+      placeholder="如有额外费用，请注明项目和金额（选填）"
+      bindinput="onFieldInput"
+      data-field="costNote"
+      maxlength="300"
+    />
+    <view class="char-count">{{costNote.length}}/300</view>
+  </view>
+
+  <!-- 备注（选填） -->
+  <view class="form-group">
+    <view class="form-label">备注</view>
+    <textarea
+      class="form-textarea"
+      value="{{remark}}"
+      placeholder="其他需要说明的事项（选填）"
+      bindinput="onFieldInput"
+      data-field="remark"
+      maxlength="300"
+    />
+    <view class="char-count">{{remark.length}}/300</view>
+  </view>
+</view>
+
+<!-- 底部提交按钮 -->
+<view class="fixed-bottom">
+  <button
+    class="btn-primary"
+    style="background: var(--color-success);"
+    bindtap="submitComplete"
+    loading="{{submitting}}"
+    disabled="{{submitting}}"
+  >
+    {{submitting ? '提交中...' : '确认完成'}}
+  </button>
+</view>

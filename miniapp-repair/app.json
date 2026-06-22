@@ -1,0 +1,23 @@
+{
+  "pages": [
+    "pages/portal/home/home",
+    "pages/portal/chat/chat",
+    "pages/portal/repair/repair",
+    "pages/portal/query/query",
+    "pages/portal/ticket-detail/ticket-detail",
+    "pages/technician/login/login",
+    "pages/technician/tickets/tickets",
+    "pages/technician/ticket-detail/ticket-detail",
+    "pages/technician/complete/complete",
+    "pages/common/error/error"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "售后维修",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f5"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
