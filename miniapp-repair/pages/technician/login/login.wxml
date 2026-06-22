@@ -1,0 +1,57 @@
+<!-- 师傅登录页 -->
+<view class="page-container">
+  <view class="login-header">
+    <view class="login-icon">🔧</view>
+    <view class="login-title">维修师傅登录</view>
+    <view class="login-desc">登录后查看和处理您的维修工单</view>
+  </view>
+
+  <view class="login-form">
+    <view class="form-group">
+      <view class="form-label form-label--required">企业编码</view>
+      <input
+        class="form-input"
+        value="{{tenantCode}}"
+        placeholder="请输入企业编码"
+        bindinput="onFieldInput"
+        data-field="tenantCode"
+      />
+    </view>
+
+    <view class="form-group">
+      <view class="form-label form-label--required">用户名</view>
+      <input
+        class="form-input"
+        value="{{username}}"
+        placeholder="请输入用户名"
+        bindinput="onFieldInput"
+        data-field="username"
+      />
+    </view>
+
+    <view class="form-group">
+      <view class="form-label form-label--required">密码</view>
+      <input
+        class="form-input"
+        type="password"
+        value="{{password}}"
+        placeholder="请输入密码"
+        bindinput="onFieldInput"
+        data-field="password"
+      />
+    </view>
+
+    <button
+      class="btn-primary"
+      bindtap="handleLogin"
+      loading="{{loggingIn}}"
+      disabled="{{loggingIn}}"
+    >
+      {{loggingIn ? '登录中...' : '登录'}}
+    </button>
+  </view>
+
+  <view class="login-footer" bindtap="goHome">
+    返回客户首页 ›
+  </view>
+</view>

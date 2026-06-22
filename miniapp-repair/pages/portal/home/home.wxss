@@ -1,0 +1,107 @@
+/* 客户门户首页 */
+
+/* 品牌头部 */
+.brand-header {
+  padding: 48rpx var(--spacing-md) 40rpx;
+  border-radius: 0 0 32rpx 32rpx;
+  color: #ffffff;
+  text-align: center;
+  margin: calc(-1 * var(--spacing-md));
+  margin-bottom: var(--spacing-lg);
+}
+
+.brand-logo {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  margin-bottom: var(--spacing-sm);
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.brand-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.brand-desc {
+  font-size: 24rpx;
+  opacity: 0.85;
+  margin-bottom: var(--spacing-sm);
+}
+
+.brand-phone {
+  display: inline-block;
+  font-size: 26rpx;
+  padding: 8rpx 24rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 32rpx;
+}
+
+/* 服务入口卡片 */
+.service-cards {
+  margin-top: var(--spacing-sm);
+}
+
+.service-card {
+  display: flex;
+  align-items: center;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.1s;
+}
+
+.service-card:active {
+  transform: scale(0.98);
+  background: #fafafa;
+}
+
+.service-card-icon {
+  font-size: 48rpx;
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  margin-right: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.service-card-body {
+  flex: 1;
+}
+
+.service-card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4rpx;
+}
+
+.service-card-desc {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+}
+
+.service-card-arrow {
+  font-size: 36rpx;
+  color: var(--color-text-hint);
+  margin-left: var(--spacing-xs);
+}
+
+/* 师傅入口 */
+.technician-entry {
+  text-align: center;
+  padding: var(--spacing-lg);
+  font-size: var(--font-caption);
+  color: var(--color-text-hint);
+}
+
+.technician-entry:active {
+  color: var(--color-primary);
+}

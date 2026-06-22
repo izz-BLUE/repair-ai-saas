@@ -1,0 +1,112 @@
+<!-- 提交报修页 -->
+<view class="page-container page-container--with-bottom">
+  <!-- 提交成功 -->
+  <view wx:if="{{submitted}}" class="state-center" style="padding-top: 100rpx;">
+    <view class="state-icon" style="opacity: 1;">✅</view>
+    <view class="state-text" style="font-weight: 600; color: var(--color-text);">报修提交成功</view>
+    <view class="state-text" style="margin-bottom: 8rpx;">您的工单号</view>
+    <view class="ticket-no-box">{{ticketNo}}</view>
+    <view class="state-text">请保存工单号，用于后续查询进度</view>
+    <button class="btn-primary" style="margin-top: 32rpx; width: 320rpx;" bindtap="goQuery">
+      查询进度
+    </button>
+    <button class="btn-secondary" style="margin-top: 16rpx; width: 320rpx;" bindtap="resetForm">
+      返回首页
+    </button>
+  </view>
+
+  <!-- 表单 -->
+  <view wx:else>
+    <view class="form-header">
+      <view class="form-header-title">提交报修申请</view>
+      <view class="form-header-desc">填写以下信息，我们会尽快安排维修师傅处理</view>
+    </view>
+
+    <!-- 产品类型 -->
+    <view class="form-group">
+      <view class="form-label form-label--required">产品类型</view>
+      <picker
+        mode="selector"
+        range="{{productTypes}}"
+        range-key="label"
+        value="{{productTypeIndex}}"
+        bindchange="onProductTypeChange"
+      >
+        <view class="form-picker {{productTypeIndex === -1 ? 'form-picker--placeholder' : ''}}">
+          {{productTypeIndex === -1 ? '请选择产品类型' : productTypes[productTypeIndex].label}}
+          <view class="form-picker-arrow">▼</view>
+        </view>
+      </picker>
+      <view wx:if="{{errors.productType}}" class="form-error">{{errors.productType}}</view>
+    </view>
+
+    <!-- 姓名 -->
+    <view class="form-group">
+      <view class="form-label form-label--required">联系人</view>
+      <input
+        class="form-input"
+        value="{{customerName}}"
+        placeholder="请输入您的姓名"
+        bindinput="onFieldInput"
+        data-field="customerName"
+      />
+      <view wx:if="{{errors.customerName}}" class="form-error">{{errors.customerName}}</view>
+    </view>
+
+    <!-- 手机号 -->
+    <view class="form-group">
+      <view class="form-label form-label--required">手机号</view>
+      <input
+        class="form-input"
+        type="number"
+        maxlength="11"
+        value="{{customerPhone}}"
+        placeholder="请输入您的手机号码"
+        bindinput="onFieldInput"
+        data-field="customerPhone"
+      />
+      <view wx:if="{{errors.customerPhone}}" class="form-error">{{errors.customerPhone}}</view>
+    </view>
+
+    <!-- 地址 -->
+    <view class="form-group">
+      <view class="form-label form-label--required">服务地址</view>
+      <input
+        class="form-input"
+        value="{{serviceAddress}}"
+        placeholder="请输入详细服务地址"
+        bindinput="onFieldInput"
+        data-field="serviceAddress"
+      />
+      <view wx:if="{{errors.serviceAddress}}" class="form-error">{{errors.serviceAddress}}</view>
+    </view>
+
+    <!-- 故障描述 -->
+    <view class="form-group">
+      <view class="form-label form-label--required">故障描述</view>
+      <textarea
+        class="form-textarea"
+        value="{{faultDescription}}"
+        placeholder="请详细描述设备故障现象（如：空调开机不制冷，显示 E2 错误）"
+        bindinput="onFieldInput"
+        data-field="faultDescription"
+        maxlength="500"
+      />
+      <view class="char-count">{{faultDescription.length}}/500</view>
+      <view wx:if="{{errors.faultDescription}}" class="form-error">{{errors.faultDescription}}</view>
+    </view>
+  </view>
+
+  <!-- 底部提交按钮 -->
+  <view wx:if="{{!submitted}}" class="fixed-bottom">
+    <button
+      class="btn-primary"
+      style="background: {{themeColor}};"
+      bindtap="submitRepair"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >
+      {{submitting ? '提交中...' : '提交报修'}}
+    </button>
+  </view>
+</view>

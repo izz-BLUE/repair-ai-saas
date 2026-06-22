@@ -1,0 +1,140 @@
+<!-- 查询进度页 -->
+<view class="page-container">
+  <!-- 查询表单 -->
+  <view wx:if="{{!result && !queryError}}" class="query-form">
+    <view class="form-header">
+      <view class="form-header-title">查询维修进度</view>
+      <view class="form-header-desc">请输入工单号和报修时使用的手机号</view>
+    </view>
+
+    <view class="form-group">
+      <view class="form-label form-label--required">工单号</view>
+      <input
+        class="form-input"
+        value="{{ticketNo}}"
+        placeholder="请输入工单号（如 WO20260622）"
+        bindinput="onFieldInput"
+        data-field="ticketNo"
+      />
+    </view>
+
+    <view class="form-group">
+      <view class="form-label form-label--required">手机号</view>
+      <input
+        class="form-input"
+        type="number"
+        maxlength="11"
+        value="{{phone}}"
+        placeholder="请输入报修时填写的手机号"
+        bindinput="onFieldInput"
+        data-field="phone"
+      />
+    </view>
+
+    <button
+      class="btn-primary"
+      style="background: {{themeColor}};"
+      bindtap="doQuery"
+      loading="{{querying}}"
+      disabled="{{querying}}"
+    >
+      {{querying ? '查询中...' : '查询'}}
+    </button>
+  </view>
+
+  <!-- 查询错误 -->
+  <view wx:if="{{queryError}}" class="state-center" style="padding-top: 100rpx;">
+    <view class="state-icon">🔍</view>
+    <view class="state-text">{{queryError}}</view>
+    <button class="btn-primary" style="width: 320rpx;" bindtap="resetQuery">
+      重新查询
+    </button>
+  </view>
+
+  <!-- 查询结果 -->
+  <view wx:if="{{result}}">
+    <!-- 状态头部 -->
+    <view class="result-header">
+      <view class="status-badge status-badge--{{result.statusColor}}">
+        <view class="status-dot status-dot--{{result.statusColor}}"></view>
+        {{result.statusLabel}}
+      </view>
+      <view class="result-ticket-no">{{result.ticketNo}}</view>
+    </view>
+
+    <!-- 工单信息卡片 -->
+    <view class="card">
+      <view class="card-title">工单信息</view>
+      <view class="info-row">
+        <view class="info-label">产品类型</view>
+        <view class="info-value">{{result.productType || '未填写'}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-label">故障描述</view>
+        <view class="info-value">{{result.faultDescription || '未填写'}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-label">报修时间</view>
+        <view class="info-value">{{result.createdAt || ''}}</view>
+      </view>
+      <view wx:if="{{result.scheduledTime}}" class="info-row">
+        <view class="info-label">预约时间</view>
+        <view class="info-value">{{result.scheduledTime}}</view>
+      </view>
+    </view>
+
+    <!-- 客户信息卡片 -->
+    <view class="card">
+      <view class="card-title">联系信息</view>
+      <view class="info-row">
+        <view class="info-label">联系人</view>
+        <view class="info-value">{{result.customerName || ''}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-label">手机号</view>
+        <view class="info-value">{{result.customerPhone || ''}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-label">地址</view>
+        <view class="info-value">{{result.serviceAddress || ''}}</view>
+      </view>
+    </view>
+
+    <!-- 师傅信息卡片（条件渲染） -->
+    <view wx:if="{{result.technicianName}}" class="card">
+      <view class="card-title">维修师傅</view>
+      <view class="info-row">
+        <view class="info-label">师傅姓名</view>
+        <view class="info-value">{{result.technicianName}}</view>
+      </view>
+      <view wx:if="{{result.technicianPhone}}" class="info-row">
+        <view class="info-label">联系电话</view>
+        <view class="info-value">{{result.technicianPhone}}</view>
+      </view>
+    </view>
+
+    <!-- 处理时间线 -->
+    <view wx:if="{{result.statusLogs && result.statusLogs.length > 0}}" class="card">
+      <view class="card-title">处理记录</view>
+      <view class="timeline">
+        <block wx:for="{{result.statusLogs}}" wx:key="id">
+          <view class="timeline-item">
+            <view class="timeline-dot timeline-dot--active"></view>
+            <view class="timeline-content">
+              {{item.toStatusLabel || ''}}
+              <view wx:if="{{item.remark}}" class="timeline-remark">{{item.remark}}</view>
+            </view>
+            <view class="timeline-time">{{item.createdAt || ''}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 返回查询 -->
+    <view style="text-align: center; padding: var(--spacing-lg);">
+      <button class="btn-secondary" style="width: 320rpx;" bindtap="resetQuery">
+        返回查询
+      </button>
+    </view>
+  </view>
+</view>

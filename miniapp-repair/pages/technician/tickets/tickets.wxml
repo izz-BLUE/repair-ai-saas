@@ -1,0 +1,65 @@
+<!-- 师父工单列表 -->
+<view class="page-container">
+  <!-- 状态筛选 Tab -->
+  <scroll-view class="tab-bar" scroll-x>
+    <view class="tab-list">
+      <view
+        wx:for="{{statusTabs}}"
+        wx:key="key"
+        class="tab-item {{activeStatus === item.key ? 'tab-item--active' : ''}}"
+        bindtap="onStatusChange"
+        data-status="{{item.key}}"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="state-center">
+    <wx:loading></wx:loading>
+    <view class="state-text">加载中...</view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{tickets.length === 0}}" class="state-center" style="padding-top: 80rpx;">
+    <view class="state-icon">📋</view>
+    <view class="state-text">{{activeStatus ? '暂无该状态的工单' : '暂无工单'}}</view>
+  </view>
+
+  <!-- 工单卡片列表 -->
+  <view wx:else>
+    <view
+      wx:for="{{tickets}}"
+      wx:key="id"
+      class="card card--compact ticket-card"
+      bindtap="goDetail"
+      data-id="{{item.id}}"
+    >
+      <!-- 第一行：状态 + 工单号 -->
+      <view class="ticket-card-header">
+        <view class="tag tag-{{item.statusColor}}">
+          {{item.statusLabel}}
+        </view>
+        <view class="ticket-card-no">{{item.ticketNo}}</view>
+      </view>
+
+      <!-- 第二行：客户 + 产品 -->
+      <view class="ticket-card-body">
+        <view class="ticket-card-customer">{{item.customerName}} · {{item.productType || '未知设备'}}</view>
+        <view class="ticket-card-desc">{{item.faultDescription || '无描述'}}</view>
+      </view>
+
+      <!-- 第三行：地址 + 时间 -->
+      <view class="ticket-card-footer">
+        <view class="ticket-card-address">📍 {{item.serviceAddress || '未填写地址'}}</view>
+        <view class="ticket-card-time">{{item.createdAt || ''}}</view>
+      </view>
+    </view>
+
+    <!-- 没有更多 -->
+    <view wx:if="{{tickets.length >= pageSize}}" class="state-text" style="text-align: center; padding: var(--spacing-md);">
+      已加载全部工单
+    </view>
+  </view>
+</view>

@@ -1,0 +1,98 @@
+/* AI 智能咨询页 */
+
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-bg);
+}
+
+.chat-list {
+  flex: 1;
+  padding: var(--spacing-md);
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.chat-row {
+  width: 100%;
+  display: flex;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* 聊天气泡 — 复用全局 .chat-bubble 基础样式 */
+.bubble-text {
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* 知识匹配提示 */
+.knowledge-hint {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.knowledge-hint-title {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 4rpx;
+}
+
+.knowledge-item {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+  line-height: 1.6;
+}
+
+/* 报修引导 */
+.repair-prompt {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: #fff7e6;
+  border-radius: var(--radius-sm);
+  font-size: 24rpx;
+  color: #d48806;
+}
+
+.repair-prompt-btn {
+  margin-top: 8rpx;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 输入栏 */
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-bottom: calc(var(--spacing-sm) + env(safe-area-inset-bottom));
+  background: var(--color-card);
+  border-top: 1rpx solid var(--color-border);
+}
+
+.chat-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 var(--spacing-sm);
+  background: #f7f8fa;
+  border-radius: 36rpx;
+  font-size: var(--font-body);
+  margin-right: var(--spacing-sm);
+}
+
+.chat-send-btn {
+  width: 120rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  padding: 0;
+  text-align: center;
+  color: #ffffff;
+  font-size: 26rpx;
+  border-radius: 36rpx;
+  border: none;
+}
+
+.chat-send-btn[disabled] {
+  opacity: 0.4;
+}

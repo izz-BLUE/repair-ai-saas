@@ -1,0 +1,37 @@
+/* 师傅登录页 */
+
+.login-header {
+  text-align: center;
+  padding: 60rpx 0 40rpx;
+}
+
+.login-icon {
+  font-size: 80rpx;
+  margin-bottom: var(--spacing-sm);
+}
+
+.login-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.login-desc {
+  font-size: 26rpx;
+  color: var(--color-text-hint);
+}
+
+.login-form {
+  padding: 0 var(--spacing-sm);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.login-footer {
+  text-align: center;
+  padding: var(--spacing-xl);
+  font-size: var(--font-caption);
+  color: var(--color-text-hint);
+}

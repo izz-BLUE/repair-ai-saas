@@ -1,0 +1,8 @@
+<!-- 通用错误页 -->
+<view class="page-container state-center">
+  <view class="state-icon">⚠️</view>
+  <view class="state-text">{{message}}</view>
+  <button class="btn-primary" style="width: 320rpx;" bindtap="goHome">
+    返回首页
+  </button>
+</view>

@@ -1,0 +1,28 @@
+/* 完成工单页 — 复用全局表单样式 */
+
+.form-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-header-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.form-header-desc {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+  font-family: 'Courier New', monospace;
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.char-count {
+  text-align: right;
+  font-size: 22rpx;
+  color: var(--color-text-hint);
+  margin-top: 4rpx;
+}

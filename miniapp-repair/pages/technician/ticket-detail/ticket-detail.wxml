@@ -1,0 +1,134 @@
+<!-- 师傅工单详情页 -->
+<view wx:if="{{loading}}" class="state-center" style="padding-top: 200rpx;">
+  <wx:loading></wx:loading>
+  <view class="state-text">加载中...</view>
+</view>
+
+<view wx:elif="{{error}}" class="state-center" style="padding-top: 200rpx;">
+  <view class="state-icon">⚠️</view>
+  <view class="state-text">{{error}}</view>
+  <button class="btn-primary" style="width: 320rpx;" bindtap="loadTicket">重试</button>
+</view>
+
+<view wx:else class="page-container page-container--with-bottom">
+  <!-- 状态横幅 -->
+  <view class="status-banner status-banner--{{ticket.statusColor}}">
+    <view class="status-dot status-dot--{{ticket.statusColor}}"></view>
+    <view class="status-banner-text">{{ticket.statusLabel}}</view>
+  </view>
+
+  <!-- 客户信息卡片 -->
+  <view class="card">
+    <view class="card-title">👤 客户信息</view>
+    <view class="info-row">
+      <view class="info-label">姓名</view>
+      <view class="info-value">{{ticket.customerName || ''}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">电话</view>
+      <view class="info-value">{{ticket.customerPhone || ''}}</view>
+      <view wx:if="{{ticket.customerPhone}}" class="info-actions">
+        <text class="info-action" bindtap="callCustomer">📞</text>
+      </view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">地址</view>
+      <view class="info-value">{{ticket.serviceAddress || ''}}</view>
+    </view>
+    <view wx:if="{{ticket.serviceAddress}}" class="card-actions">
+      <text class="action-link" bindtap="copyAddress">复制地址</text>
+    </view>
+  </view>
+
+  <!-- 工单信息卡片 -->
+  <view class="card">
+    <view class="card-title">📋 工单信息</view>
+    <view class="info-row">
+      <view class="info-label">工单号</view>
+      <view class="info-value ticket-no">{{ticket.ticketNo || ''}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">产品类型</view>
+      <view class="info-value">{{ticket.productType || '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">故障描述</view>
+      <view class="info-value">{{ticket.faultDescription || '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">优先级</view>
+      <view class="info-value">{{ticket.priorityLabel || '普通'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">创建时间</view>
+      <view class="info-value">{{ticket.createdAt || ''}}</view>
+    </view>
+    <view wx:if="{{ticket.scheduledTime}}" class="info-row">
+      <view class="info-label">预约时间</view>
+      <view class="info-value">{{ticket.scheduledTime}}</view>
+    </view>
+  </view>
+
+  <!-- 维修结果卡片（已完成/已关闭/已取消时显示） -->
+  <view wx:if="{{ticket.repairResult && (ticket.status === 'COMPLETED' || ticket.status === 'CLOSED')}}" class="card">
+    <view class="card-title">🔧 维修结果</view>
+    <view class="info-row">
+      <view class="info-label">维修结果</view>
+      <view class="info-value">{{ticket.repairResult}}</view>
+    </view>
+    <view wx:if="{{ticket.partsNote}}" class="info-row">
+      <view class="info-label">配件说明</view>
+      <view class="info-value">{{ticket.partsNote}}</view>
+    </view>
+    <view wx:if="{{ticket.costNote}}" class="info-row">
+      <view class="info-label">费用说明</view>
+      <view class="info-value">{{ticket.costNote}}</view>
+    </view>
+  </view>
+
+  <!-- 处理时间线 -->
+  <view wx:if="{{statusLogs && statusLogs.length > 0}}" class="card">
+    <view class="card-title">📜 处理记录</view>
+    <view class="timeline">
+      <block wx:for="{{statusLogs}}" wx:key="id">
+        <view class="timeline-item">
+          <view class="timeline-dot timeline-dot--active"></view>
+          <view class="timeline-content">
+            {{item.toStatusLabel || ''}}
+            <view wx:if="{{item.remark}}" class="timeline-remark">{{item.remark}}</view>
+          </view>
+          <view class="timeline-time">{{item.createdAt || ''}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>
+
+<!-- 底部操作栏 -->
+<view wx:if="{{!loading && !error}}" class="fixed-bottom">
+  <!-- ASSIGNED → 开始处理 -->
+  <button
+    wx:if="{{ticket.status === 'ASSIGNED'}}"
+    class="btn-primary"
+    bindtap="startProcess"
+    loading="{{acting}}"
+    disabled="{{acting}}"
+  >
+    开始处理
+  </button>
+
+  <!-- IN_PROGRESS → 完成工单 -->
+  <button
+    wx:if="{{ticket.status === 'IN_PROGRESS'}}"
+    class="btn-primary"
+    style="background: var(--color-success);"
+    bindtap="goComplete"
+  >
+    完成工单
+  </button>
+
+  <!-- COMPLETED / CLOSED / CANCELLED → 只读 -->
+  <view wx:if="{{ticket.status === 'COMPLETED' || ticket.status === 'CLOSED' || ticket.status === 'CANCELLED'}}" class="readonly-hint">
+    此工单已完结
+  </view>
+</view>

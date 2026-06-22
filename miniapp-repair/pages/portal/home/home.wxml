@@ -1,0 +1,68 @@
+<!-- 客户门户首页 -->
+<view class="page-container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="state-center">
+    <wx:loading></wx:loading>
+    <view class="state-text">加载中...</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view wx:elif="{{error}}" class="state-center">
+    <view class="state-icon">🔧</view>
+    <view class="state-text">{{error}}</view>
+    <button class="btn-primary" style="width: 320rpx;" bindtap="loadPortalSettings">
+      重新加载
+    </button>
+  </view>
+
+  <!-- 正常内容 -->
+  <view wx:else>
+    <!-- 品牌头部 -->
+    <view class="brand-header" style="background: linear-gradient(135deg, {{themeColor}}, {{themeColorLight}});">
+      <image wx:if="{{logoUrl}}" class="brand-logo" src="{{logoUrl}}" mode="aspectFit"></image>
+      <view class="brand-title">{{tenantName || '售后维修服务'}}</view>
+      <view class="brand-desc">{{tenantDescription || '专业维修 · 快速响应 · 贴心服务'}}</view>
+      <view wx:if="{{contactPhone}}" class="brand-phone" bindtap="callPhone">
+        📞 {{contactPhone}}
+      </view>
+    </view>
+
+    <!-- 服务入口卡片 -->
+    <view class="service-cards">
+      <!-- AI 智能咨询 -->
+      <view class="service-card" bindtap="goChat">
+        <view class="service-card-icon">🤖</view>
+        <view class="service-card-body">
+          <view class="service-card-title">AI 智能咨询</view>
+          <view class="service-card-desc">描述故障现象，AI 帮你诊断问题</view>
+        </view>
+        <view class="service-card-arrow">›</view>
+      </view>
+
+      <!-- 提交报修 -->
+      <view class="service-card" bindtap="goRepair">
+        <view class="service-card-icon">📝</view>
+        <view class="service-card-body">
+          <view class="service-card-title">提交报修</view>
+          <view class="service-card-desc">填写报修信息，快速安排师傅上门</view>
+        </view>
+        <view class="service-card-arrow">›</view>
+      </view>
+
+      <!-- 查询进度 -->
+      <view class="service-card" bindtap="goQuery">
+        <view class="service-card-icon">🔍</view>
+        <view class="service-card-body">
+          <view class="service-card-title">查询进度</view>
+          <view class="service-card-desc">输入工单号查看维修处理状态</view>
+        </view>
+        <view class="service-card-arrow">›</view>
+      </view>
+    </view>
+
+    <!-- 底部师傅入口 -->
+    <view class="technician-entry" bindtap="goTechnicianLogin">
+      我是维修师傅 ›
+    </view>
+  </view>
+</view>

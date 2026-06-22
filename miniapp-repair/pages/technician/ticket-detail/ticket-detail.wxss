@@ -1,0 +1,118 @@
+/* 师傅工单详情页 */
+
+/* 状态横幅 */
+.status-banner {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.status-banner--pending {
+  background: #fff7e6;
+}
+
+.status-banner--assigned {
+  background: #e6f7ff;
+}
+
+.status-banner--in-progress {
+  background: #f9f0ff;
+}
+
+.status-banner--completed {
+  background: #f6ffed;
+}
+
+.status-banner--closed {
+  background: #fafafa;
+}
+
+.status-banner--cancelled {
+  background: #fff2f0;
+}
+
+.status-banner-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-left: 8rpx;
+}
+
+/* 信息行 */
+.card-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1rpx solid var(--color-divider);
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  width: 140rpx;
+  font-size: 26rpx;
+  color: var(--color-text-hint);
+  flex-shrink: 0;
+}
+
+.info-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+/* 工单号特殊样式 */
+.ticket-no {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1rpx;
+}
+
+/* 操作按钮 */
+.info-actions {
+  margin-left: 8rpx;
+}
+
+.info-action {
+  font-size: 36rpx;
+  padding: 4rpx 8rpx;
+}
+
+/* 操作链接 */
+.card-actions {
+  padding-top: var(--spacing-xs);
+  border-top: 1rpx solid var(--color-divider);
+  margin-top: var(--spacing-xs);
+}
+
+.action-link {
+  font-size: 24rpx;
+  color: var(--color-primary);
+  padding: 8rpx 0;
+}
+
+/* 时间线备注 */
+.timeline-remark {
+  font-size: 24rpx;
+  color: var(--color-text-hint);
+  margin-top: 4rpx;
+}
+
+/* 只读提示 */
+.readonly-hint {
+  text-align: center;
+  color: var(--color-text-hint);
+  font-size: 26rpx;
+  padding: 24rpx 0;
+}

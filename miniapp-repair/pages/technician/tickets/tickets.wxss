@@ -1,0 +1,91 @@
+/* 师傅工单列表 */
+
+/* 状态筛选 Tab */
+.tab-bar {
+  width: 100%;
+  white-space: nowrap;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tab-list {
+  display: inline-flex;
+  padding: 0 var(--spacing-sm);
+}
+
+.tab-item {
+  display: inline-block;
+  padding: 12rpx 24rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  border-radius: 32rpx;
+  margin-right: 12rpx;
+  background: var(--color-card);
+  white-space: nowrap;
+}
+
+.tab-item--active {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* 工单卡片 */
+.ticket-card {
+  transition: transform 0.1s;
+}
+
+.ticket-card:active {
+  transform: scale(0.98);
+  background: #fafafa;
+}
+
+.ticket-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.ticket-card-no {
+  font-size: 22rpx;
+  font-family: 'Courier New', monospace;
+  color: var(--color-text-hint);
+  margin-left: auto;
+}
+
+.ticket-card-body {
+  margin-bottom: 8rpx;
+}
+
+.ticket-card-customer {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 4rpx;
+}
+
+.ticket-card-desc {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-card-footer {
+  display: flex;
+  align-items: center;
+  font-size: 22rpx;
+  color: var(--color-text-hint);
+}
+
+.ticket-card-address {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-card-time {
+  margin-left: var(--spacing-sm);
+  flex-shrink: 0;
+}
