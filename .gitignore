@@ -38,3 +38,17 @@ frontend/dist/
 
 # Playwright test artifacts
 .playwright-mcp/
+
+# Local Python virtual environment
+agent-python/.venv/
+agent-python/.venv.deps-installed
+
+# WeChat DevTools local private config
+miniapp-repair/project.private.config.json
+
+# Python local env
+agent-python/.venv/
+agent-python/.venv.deps-installed
+
+# WeChat DevTools local config
+miniapp-repair/project.private.config.json
