@@ -244,3 +244,5 @@ miniapp-repair/
 **技术栈：** 原生 WXML + WXSS + JavaScript，无 Taro/uni-app。
 
 **设计规范：** `.claude/skills/wechat-miniapp-ui-design/SKILL.md`
+
+**验收清单：** [微信开发者工具人工验收清单](miniapp-devtools-checklist.md)
