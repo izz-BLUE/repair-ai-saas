@@ -96,7 +96,8 @@ services:
     restart: always
     ports:
       - "${FRONTEND_PORT:-80}:80"
-      - "443:443"
+    # HTTPS（443）不在容器内配置。生产环境建议通过宿主机 Nginx 统一处理 SSL
+    # 终结，详见 docs/shared-server-deployment.md §11 和 deploy/nginx/repair-ai.conf
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
       - ./deploy/nginx/repair-ai.conf:/etc/nginx/conf.d/default.conf:ro

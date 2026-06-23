@@ -1,0 +1,24 @@
+# ============================================
+# 定时备份 crontab 模板
+#
+# 安装方式:
+#   1. 确保所有 backup 脚本可执行
+#   2. 修改下方路径为实际项目路径
+#   3. crontab -e 粘贴以下内容
+#   4. 验证: crontab -l
+# ============================================
+
+# 每天凌晨 3:00 — MySQL 数据库备份（保留 7 份日备）
+0 3 * * * cd /opt/apps/repair-ai-saas && bash deploy/scripts/backup-mysql.sh 7 >> /opt/backups/backup.log 2>&1
+
+# 每周日凌晨 4:00 — 上传文件备份（保留 4 份周备）
+0 4 * * 0 cd /opt/apps/repair-ai-saas && bash deploy/scripts/backup-uploads.sh >> /opt/backups/backup.log 2>&1
+
+# 每周日凌晨 4:30 — Qdrant 向量数据备份（保留 4 份周备）
+30 4 * * 0 cd /opt/apps/repair-ai-saas && bash deploy/scripts/backup-qdrant.sh >> /opt/backups/backup.log 2>&1
+
+# 每月 1 号凌晨 5:00 — 清理 30 天前的旧备份（可选）
+# 0 5 1 * * find /opt/backups/ -name "*.sql.gz" -mtime +30 -delete
+
+# 备份日志轮转（可选，防止日志过大）
+# 0 0 * * 0 truncate -s 0 /opt/backups/backup.log

@@ -65,19 +65,19 @@ class RateLimiterTest {
     // ==================== getClientIp ====================
 
     @Test
-    @DisplayName("getClientIp: 优先取 X-Forwarded-For 第一个 IP")
-    void getClientIp_xForwardedFor_first() {
+    @DisplayName("getClientIp: 取 X-Forwarded-For 最后一个 IP（防伪造，Nginx 追加真实 IP 在末尾）")
+    void getClientIp_xForwardedFor_last() {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        req.addHeader("X-Forwarded-For", "192.168.1.100, 10.0.0.1, 172.16.0.1");
+        req.addHeader("X-Forwarded-For", "evil-ip, 10.0.0.1, 172.16.0.1");
         req.setRemoteAddr("127.0.0.1");
-        assertEquals("192.168.1.100", RateLimiter.getClientIp(req));
+        assertEquals("172.16.0.1", RateLimiter.getClientIp(req));
     }
 
     @Test
-    @DisplayName("getClientIp: X-Forwarded-For 中跳过 unknown")
+    @DisplayName("getClientIp: X-Forwarded-For 中跳过 unknown（从右向左遍历）")
     void getClientIp_xForwardedFor_skipUnknown() {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        req.addHeader("X-Forwarded-For", "unknown, 10.0.0.1");
+        req.addHeader("X-Forwarded-For", "10.0.0.1, unknown");
         req.setRemoteAddr("127.0.0.1");
         assertEquals("10.0.0.1", RateLimiter.getClientIp(req));
     }

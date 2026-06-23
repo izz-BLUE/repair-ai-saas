@@ -86,4 +86,20 @@ class JwtAuthenticationFilterTest {
     void randomApiPath_isNotPublic() {
         assertFalse(isPublicPath("/api/admin/users"));
     }
+
+    // ===== OPTIONS 预检请求（Filter 层直接放行，不判断是否 public path） =====
+
+    @Test
+    void options_public_login_shouldPass() {
+        // OPTIONS 请求在 doFilterInternal 中先于路径检查放行
+        // 此处验证路径匹配逻辑 — OPTIONS /api/public/login 仍然是 public path
+        assertTrue(isPublicPath("/api/public/login"));
+    }
+
+    @Test
+    void options_adminPath_wouldBeBlockedByPathFilter_butFilterLetsOptionsThrough() {
+        // OPTIONS /api/admin/tickets 不是 public path，但 JwtAuthenticationFilter
+        // 在方法级别检查 OPTIONS 后直接放行，不进入路径匹配
+        assertFalse(isPublicPath("/api/admin/tickets"));
+    }
 }

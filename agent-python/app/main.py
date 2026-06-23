@@ -70,8 +70,8 @@ async def health():
 @app.post("/agent/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     logger.info(
-        "Chat request: question='%s', tenantId=%s, productType=%s, faultType=%s, traceId=%s",
-        req.question[:50], req.tenantId, req.productType, req.faultType, req.traceId,
+        "Chat request: questionLen=%d, tenantId=%s, productType=%s, faultType=%s, traceId=%s",
+        len(req.question), req.tenantId, req.productType, req.faultType, req.traceId,
     )
 
     # 优先：如果传了 tenantId，做向量搜索
@@ -152,8 +152,8 @@ async def knowledge_delete(req: DeleteItemRequest):
 @app.post("/agent/search", response_model=SearchResponse)
 async def search(req: SearchRequest):
     logger.info(
-        "Search request: tenantId=%d, question='%s', productType=%s, faultType=%s, topK=%d",
-        req.tenantId, req.question[:50], req.productType, req.faultType, req.topK,
+        "Search request: tenantId=%d, questionLen=%d, productType=%s, faultType=%s, topK=%d",
+        req.tenantId, len(req.question), req.productType, req.faultType, req.topK,
     )
     items = vector_service.search(
         tenant_id=req.tenantId,

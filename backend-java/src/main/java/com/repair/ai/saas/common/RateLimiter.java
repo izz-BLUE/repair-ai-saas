@@ -152,8 +152,14 @@ public class RateLimiter {
     /**
      * 从 HttpServletRequest 获取客户端真实 IP。
      *
-     * 优先级：X-Forwarded-For 第一个 IP → X-Real-IP → remoteAddr
-     * 过滤 unknown、空字符串、0:0:0:0:0:0:0:1（IPv6 localhost）。
+     * 优先级：X-Forwarded-For 最后一个 IP → X-Real-IP → remoteAddr
+     *
+     * 安全设计：
+     * - Nginx 使用 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for
+     *   会将真实客户端 IP 追加到现有 X-Forwarded-For 链末尾
+     * - 取最后一个 IP（最右）防止客户端伪造：即使客户端发送了伪造的 X-Forwarded-For
+     *   header，Nginx 也会把真实 IP 追加在末尾，后端取最后一个即可拿到真实 IP
+     * - 过滤 unknown、空字符串、0:0:0:0:0:0:0:1（IPv6 localhost）
      *
      * @param request HTTP 请求
      * @return 客户端 IP，不会返回 null
@@ -161,12 +167,12 @@ public class RateLimiter {
     public static String getClientIp(HttpServletRequest request) {
         String ip = null;
 
-        // 1. X-Forwarded-For（取第一个非 unknown 的 IP）
+        // 1. X-Forwarded-For（取最后一个非 unknown 的 IP — 最右原则防伪造）
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             String[] parts = forwarded.split(",");
-            for (String part : parts) {
-                String candidate = part.trim();
+            for (int i = parts.length - 1; i >= 0; i--) {
+                String candidate = parts[i].trim();
                 if (!candidate.isEmpty() && !"unknown".equalsIgnoreCase(candidate)) {
                     ip = candidate;
                     break;

@@ -12,6 +12,9 @@
 | `scripts/backup-uploads.sh` | 上传文件备份 | `bash deploy/scripts/backup-uploads.sh` |
 | `scripts/backup-qdrant.sh` | Qdrant 向量数据备份 | `bash deploy/scripts/backup-qdrant.sh` |
 | `scripts/restore-mysql.sh` | MySQL 数据库恢复 | `bash deploy/scripts/restore-mysql.sh <备份文件>` |
+| `scripts/restore-uploads.sh` | 上传文件恢复 | `bash deploy/scripts/restore-uploads.sh <备份文件>` |
+| `scripts/restore-qdrant.sh` | Qdrant 向量数据恢复 | `bash deploy/scripts/restore-qdrant.sh <备份文件>` |
+| `scripts/crontab.example` | 定时备份 crontab 模板 | 参考文件内容配置 `crontab -e` |
 | `nginx/repair-ai.conf` | Nginx 反向代理配置（参考模板） | 部署时复制到 Nginx 配置目录 |
 
 ## 快速开始
