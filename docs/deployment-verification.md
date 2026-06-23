@@ -1,6 +1,6 @@
 # 生产部署验证文档
 
-> 版本：V0.5.6
+> 版本：V0.6.0
 > 创建日期：2026-06-22
 > 最后更新：2026-06-23
 
@@ -98,6 +98,7 @@ docker compose -f docker-compose.prod.yml ps mysql
 | 6 | Flyway 迁移成功 | `docker compose logs backend \| grep -i flyway` | 无 ERROR |
 | 7 | Nginx 代理正常 | 浏览器访问根路径 | 出现前端页面 |
 | 8 | API 可访问 | `curl http://localhost/api/public/PLATFORM/portal-settings` | 返回 JSON |
+| 9 | Backend 健康检查 | `curl http://localhost/api/health` | `{"status":"UP","service":"repair-ai-saas-backend"}` |
 
 ### 安全验证
 
@@ -163,6 +164,57 @@ docker compose -f docker-compose.prod.yml ps mysql
 | 3 | 1 分钟内查询工单 11 次 | 第 11 次返回 429 | ✅ PASS |
 | 4 | 1 分钟内 AI 对话 6 次 | 第 6 次返回 429 | ✅ PASS |
 
+### V0.6.0 生产 Docker 部署验证
+
+> 🟢 2026-06-23 生产 Docker 环境全栈验证通过。
+
+#### 构建与启动
+
+| # | 检查项 | 命令/操作 | 结果 |
+|---|--------|----------|------|
+| 1 | docker compose config 有效 | `docker compose --env-file .env.prod.local -f docker-compose.prod.yml config --quiet` | ✅ PASS |
+| 2 | backend 镜像构建 | `docker compose build backend` | ✅ PASS |
+| 3 | agent-python 镜像构建 | `docker compose build agent-python` | ✅ PASS |
+| 4 | 全栈启动（6 service） | `docker compose up -d` | ✅ 全部 Running |
+| 5 | MySQL healthy | `docker compose ps mysql` | ✅ healthy |
+| 6 | Redis PING | `docker compose exec redis redis-cli PING` | ✅ PONG |
+| 7 | Qdrant healthz | `curl http://localhost:6333/healthz` | ✅ ok |
+| 8 | Backend Started | `docker compose logs backend` | ✅ Flyway 无 ERROR |
+| 9 | Agent Uvicorn | `docker compose logs agent-python` | ✅ Uvicorn running |
+| 10 | Agent health | agent `/health` 端点 | ✅ qdrant connected |
+| 11 | Nginx 前端 | `curl http://localhost` | ✅ 返回 HTML |
+| 12 | `/api/health` | `curl http://localhost/api/health` | ✅ `{"status":"UP"}` |
+| 13 | `/api/public/...` | `curl http://localhost/api/public/PLATFORM/portal-settings` | ✅ 200 JSON |
+| 14 | init-demo-data.sh | `bash deploy/scripts/init-demo-data.sh` | ✅ 8 步全部成功 |
+
+#### 生产 Smoke Test
+
+| # | 操作 | 预期 | 结果 |
+|---|------|------|------|
+| 1 | 平台管理员登录 | 返回 token | ✅ PASS |
+| 2 | 创建演示租户 | 返回 tenantCode + 随机密码 | ✅ PASS |
+| 3 | 租户管理员登录 | 返回 token | ✅ PASS |
+| 4 | 客户提交报修 | 返回工单编号 | ✅ PASS |
+| 5 | 后台派单给师傅 | 工单状态变为 ASSIGNED | ✅ PASS |
+| 6 | 师傅开始处理 | ASSIGNED → IN_PROGRESS | ✅ PASS |
+| 7 | 师傅完成工单 | IN_PROGRESS → COMPLETED | ✅ PASS |
+| 8 | 客户查询状态同步 | 返回 COMPLETED + 时间线完整 | ✅ PASS |
+
+#### V0.6.0 已修复的生产问题
+
+| # | 问题 | 根因 | 修复 |
+|---|------|------|------|
+| 1 | Backend 一直 Restarting，日志 `Access denied for user '-root'` | `application-prod.yml` 使用 bash 语法 `${DB_USERNAME:-root}`，Spring 解析默认值为 `-root` | 4 处 `${VAR:-default}` → `${VAR:default}` |
+| 2 | `curl /api/health` 返回 401 UNAUTHORIZED | `JwtAuthenticationFilter.PUBLIC_PATHS` 未包含 `/api/health` | 加入白名单 + 新增 `HealthController` |
+| 3 | agent-python Dockerfile 构建失败 | `COPY pyproject.toml ./` 后 `pip install .` 时 `app/` 源码缺失 | 改为 `COPY . .` 后 `pip install .` |
+| 4 | init-demo-data.sh 依赖 python3 | JSON 解析用 `python3 -c` | 改为 `jq -r`，启动时检查 curl + jq |
+
+#### 环境声明
+
+- 验证环境：Linux Docker（非 Windows Docker Desktop）
+- 未涉及：HTTPS 证书、公网域名、云服务器
+- 未验证：微信小程序生产发布
+
 ## 首次部署后必须操作
 
 1. **立即修改平台管理员密码**（用户下拉菜单 → 修改密码）
@@ -180,6 +232,9 @@ docker compose -f docker-compose.prod.yml ps mysql
 | Backend 启动后立即退出 | JWT_SECRET 未配置 | 编辑 .env 设置 JWT_SECRET |
 | AI 回答返回"当前知识库中没有足够信息" | Python Agent 未启动 | `docker compose up -d agent-python` |
 | 429 错误频繁出现 | 限流阈值过于严格 | 检查日志，确认是否被误拦 |
+| Backend 启动后一直 Restarting，日志 `Access denied for user '-root'` | `application-prod.yml` 占位符用 bash 语法 `${VAR:-default}` 而非 Spring `${VAR:default}` | 所有 `:-` 改为 `:`（V0.6.0 已修复） |
+| `/api/health` 返回 401 | JWT Filter 白名单未包含 `/api/health` | 加入 `PUBLIC_PATHS`（V0.6.0 已修复） |
+| agent-python 构建失败 | Dockerfile 先 `COPY pyproject.toml` 后 `pip install .`，源码缺失 | 改为 `COPY . .` 后安装（V0.6.0 已修复） |
 
 ## Docker 镜像加速
 

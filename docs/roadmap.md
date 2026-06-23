@@ -427,6 +427,43 @@
 
 ---
 
+## V0.6.0 — 生产 Docker 部署验证 ✅
+
+**目标：** 在生产 Docker Compose 环境中完成完整构建、启动、健康检查与业务 smoke test。
+
+**前置修复（V0.6.0 阶段内）：**
+- agent-python Dockerfile: 修复 COPY + pip install 顺序，补充 pyproject.toml `[build-system]`，新增 `.dockerignore`
+- application-prod.yml: 修复 4 处 Spring 占位符 `${VAR:-default}` → `${VAR:default}`，根因 username 为 `-root` 导致 Flyway 连接被拒
+- JwtAuthenticationFilter: `/api/health` 加入 PUBLIC_PATHS 白名单，新增 `HealthController` 返回 `{"status":"UP"}`
+- init-demo-data.sh: 8 处 `python3 -c` JSON 解析改为 `jq -r`，新增 curl + jq 依赖检查
+
+**生产 Docker 验证结果：**
+
+| # | 检查项 | 结果 |
+|---|--------|------|
+| 1 | `docker compose config --quiet` | ✅ PASS |
+| 2 | `docker compose build backend` | ✅ PASS |
+| 3 | `docker compose build agent-python` | ✅ PASS |
+| 4 | `docker compose up -d`（6 个 service） | ✅ 全部启动 |
+| 5 | repair-mysql healthy | ✅ |
+| 6 | repair-redis PING | ✅ PONG |
+| 7 | repair-qdrant healthz | ✅ ok |
+| 8 | repair-backend Started | ✅ Flyway 无 ERROR |
+| 9 | repair-agent Uvicorn running | ✅ qdrant connected |
+| 10 | repair-nginx 前端首页 | ✅ 返回 HTML |
+| 11 | `curl /api/health` | ✅ `{"status":"UP"}` |
+| 12 | `curl /api/public/PLATFORM/portal-settings` | ✅ 200 JSON |
+| 13 | `init-demo-data.sh` 执行 | ✅ 8 步全部成功 |
+| 14 | 生产 smoke test（8 步业务闭环） | ✅ 全部通过 |
+
+**修改文件：** `agent-python/Dockerfile`, `agent-python/pyproject.toml`, `agent-python/.dockerignore`, `application-prod.yml`, `JwtAuthenticationFilter.java`, `HealthController.java`, `JwtAuthenticationFilterTest.java`, `init-demo-data.sh`
+
+**新增表：** 无
+
+**环境说明：** 验证环境为 Linux Docker，未涉及 HTTPS 证书、公网域名、云服务器。微信小程序生产发布未验证。
+
+---
+
 ## V0.5.5+ — 后续规划
 
 ---

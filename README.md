@@ -278,6 +278,7 @@ pytest tests/ -v
 | V0.5.5 | 本地全流程 Smoke Test + RateLimiter 修复 | ✅ |
 | V0.5.6 | 小程序师傅端 DevTools 验收 | ✅ |
 | V0.5.7 | Web 派单弹窗 500 修复 | ✅ |
+| V0.6.0 | 生产 Docker 部署验证 | ✅ |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
