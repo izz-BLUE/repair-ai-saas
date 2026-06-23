@@ -38,7 +38,19 @@ public class Tenant {
 
     private Integer maxAiDailyCalls;
 
+    private String planCode;
+
+    private String planName;
+
+    private Integer maxUsers;
+
+    private Integer maxTechnicians;
+
+    private Integer ticketMonthlyLimit;
+
     private LocalDateTime expiredAt;
+
+    private LocalDateTime trialEndAt;
 
     private String status;
 

@@ -3,8 +3,11 @@ package com.repair.ai.saas.module.user.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.repair.ai.saas.common.BusinessException;
+import com.repair.ai.saas.common.QuotaChecker;
 import com.repair.ai.saas.common.ResultCode;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
+import com.repair.ai.saas.module.tenant.enums.TenantStatus;
 import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.module.user.mapper.SysUserMapper;
@@ -59,15 +62,11 @@ public class SysUserService {
     public LoginResult login(String tenantCode, String username, String password) {
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
 
-        // 租户状态校验
-        if (!"ACTIVE".equals(tenant.getStatus())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业已被禁用，请联系平台管理员");
-        }
+        // 试用到期自动转 EXPIRED
+        tenantService.autoExpireIfTrialEnded(tenant);
 
-        // 租户到期校验
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(java.time.LocalDateTime.now())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期，请联系平台管理员");
-        }
+        // 租户状态校验（使用 TenantAccessChecker）
+        TenantAccessChecker.requireLoginAllowed(tenant);
 
         SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
@@ -114,6 +113,10 @@ public class SysUserService {
         if (count > 0) {
             throw new BusinessException(ResultCode.CONFLICT, "用户名已存在");
         }
+
+        // 额度检查
+        Tenant tenant = tenantService.getById(tenantId);
+        checkUserQuota(tenant, roleEnum);
 
         SysUser user = new SysUser();
         user.setTenantId(tenantId);
@@ -176,9 +179,14 @@ public class SysUserService {
             if (roleEnum == null) {
                 throw new BusinessException(ResultCode.VALIDATION_ERROR, "无效的角色: " + role);
             }
-            // 禁止租户管理员将用户角色修改为平台超级管理员
             if (roleEnum == Role.SUPER_ADMIN) {
                 throw new BusinessException(ResultCode.FORBIDDEN, "不能将用户角色设置为平台超级管理员");
+            }
+
+            // 当角色改为 TECHNICIAN 且原来不是 TECHNICIAN 时，检查师傅额度
+            if (roleEnum == Role.TECHNICIAN && !Role.TECHNICIAN.name().equals(user.getRole())) {
+                Tenant tenant = tenantService.getById(tenantId);
+                checkTechnicianQuota(tenant);
             }
             user.setRole(roleEnum.name());
         }
@@ -213,6 +221,14 @@ public class SysUserService {
         if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
             throw new BusinessException(ResultCode.VALIDATION_ERROR, "状态值无效");
         }
+
+        // 从 INACTIVE 启用为 ACTIVE 时，检查用户额度
+        if ("ACTIVE".equals(status) && !"ACTIVE".equals(user.getStatus())) {
+            Tenant tenant = tenantService.getById(tenantId);
+            Role roleEnum = Role.fromString(user.getRole());
+            checkUserQuota(tenant, roleEnum);
+        }
+
         user.setStatus(status);
         sysUserMapper.updateById(user);
     }
@@ -269,7 +285,9 @@ public class SysUserService {
 
     /**
      * 用于 JwtAuthenticationFilter 实时校验。
-     * 返回 null 表示用户不存在 / 已禁用 / 已删除 / tenantId 不匹配 / 租户已禁用。
+     * 返回 null 表示用户不存在 / 已禁用 / 已删除 / tenantId 不匹配 / 租户不可用。
+     * <p>
+     * EXPIRED 状态的租户允许登录（可查看历史数据），但不允许写操作。
      */
     public SysUser getActiveUserForAuth(Long userId, Long tenantId) {
         SysUser user = sysUserMapper.selectOne(
@@ -281,16 +299,49 @@ public class SysUserService {
         if (user == null) {
             return null;
         }
-        // 校验租户状态：租户被禁用后，该租户下所有用户均不可登录
-        Tenant tenant = tenantService.getById(tenantId);
-        if (tenant == null || !"ACTIVE".equals(tenant.getStatus())) {
-            return null;
-        }
-        // 校验租户到期：过期后该租户下所有用户即时失效
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(java.time.LocalDateTime.now())) {
+        // 校验租户是否允许登录（TRIAL / ACTIVE / EXPIRED）
+        if (!tenantService.isLoginAllowed(tenantId)) {
             return null;
         }
         return user;
+    }
+
+    // ---------- 额度检查 ----------
+
+    /**
+     * 检查创建/启用用户时的额度限制。
+     * 检查 maxUsers 和 maxTechnicians（如果角色为 TECHNICIAN）。
+     */
+    private void checkUserQuota(Tenant tenant, Role role) {
+        if (tenant == null) return;
+
+        // 统计当前 ACTIVE 用户数
+        Long activeUserCount = sysUserMapper.selectCount(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getTenantId, tenant.getId())
+                        .eq(SysUser::getStatus, "ACTIVE")
+        );
+        // 新用户即将创建/启用，+1 后检查
+        QuotaChecker.checkQuota(activeUserCount + 1, tenant.getMaxUsers(), "员工账号");
+
+        // 如果是 TECHNICIAN 角色，额外检查师傅额度
+        if (role == Role.TECHNICIAN) {
+            checkTechnicianQuota(tenant);
+        }
+    }
+
+    /**
+     * 检查师傅额度（当前 ACTIVE 师傅数 + 即将新增的 1 个 ≤ maxTechnicians）。
+     */
+    private void checkTechnicianQuota(Tenant tenant) {
+        if (tenant == null) return;
+        Long activeTechCount = sysUserMapper.selectCount(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getTenantId, tenant.getId())
+                        .eq(SysUser::getRole, Role.TECHNICIAN.name())
+                        .eq(SysUser::getStatus, "ACTIVE")
+        );
+        QuotaChecker.checkQuota(activeTechCount + 1, tenant.getMaxTechnicians(), "师傅账号");
     }
 
     // ---------- 登录结果 DTO ----------

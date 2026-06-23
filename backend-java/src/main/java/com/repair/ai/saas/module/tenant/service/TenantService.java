@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.ResultCode;
 import com.repair.ai.saas.module.tenant.entity.Tenant;
+import com.repair.ai.saas.module.tenant.enums.PlanPreset;
+import com.repair.ai.saas.module.tenant.enums.TenantStatus;
 import com.repair.ai.saas.module.tenant.mapper.TenantMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -23,15 +26,26 @@ public class TenantService {
     private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final Random RANDOM = new Random();
 
-    /** 创建租户，返回 tenantCode */
+    /** 创建租户，返回 tenantCode。默认 TRIAL 状态，试用 14 天。 */
     public Tenant createTenant(String name, String contactName, String contactPhone) {
         Tenant tenant = new Tenant();
         tenant.setTenantCode(generateTenantCode());
         tenant.setName(name);
         tenant.setContactName(contactName);
         tenant.setContactPhone(contactPhone);
-        tenant.setStatus("ACTIVE");
+        tenant.setStatus(TenantStatus.TRIAL.name());
         tenant.setPortalEnabled(true);
+        // 应用试用版预设
+        PlanPreset trial = PlanPreset.TRIAL;
+        tenant.setPlanCode(trial.getCode());
+        tenant.setPlanName(trial.getDisplayName());
+        tenant.setMaxUsers(trial.getMaxUsers());
+        tenant.setMaxTechnicians(trial.getMaxTechnicians());
+        tenant.setMaxKnowledgeBases(trial.getMaxKnowledgeBases());
+        tenant.setMaxDocuments(trial.getMaxDocuments());
+        tenant.setMaxAiDailyCalls(trial.getMaxAiDailyCalls());
+        tenant.setTicketMonthlyLimit(trial.getTicketMonthlyLimit());
+        tenant.setTrialEndAt(LocalDateTime.now().plusDays(14));
         tenantMapper.insert(tenant);
         return tenant;
     }
@@ -109,10 +123,11 @@ public class TenantService {
         if (tenant == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "企业不存在");
         }
-        boolean portalOk = "ACTIVE".equals(tenant.getStatus())
+        TenantStatus status = TenantStatus.fromString(tenant.getStatus());
+        boolean portalOk = (status != null && status.allowsPublicRepair())
                 && Boolean.TRUE.equals(tenant.getPortalEnabled())
-                && !(tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now()));
-        boolean expired = tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now());
+                && !isExpired(tenant);
+        boolean expired = isExpired(tenant);
         return Map.of(
                 "name", tenant.getName() != null ? tenant.getName() : "",
                 "portalTitle", tenant.getPortalTitle() != null ? tenant.getPortalTitle() : "",
@@ -137,15 +152,44 @@ public class TenantService {
         );
     }
 
-    /** 检查租户是否可用（ACTIVE + 未过期） */
+    /**
+     * 检查租户是否可用（TRIAL/ACTIVE + 未过期）。
+     * 用于 JWT 认证过滤器实时校验。
+     */
     public boolean isTenantAvailable(Long tenantId) {
         Tenant tenant = tenantMapper.selectById(tenantId);
-        if (tenant == null || !"ACTIVE".equals(tenant.getStatus())) {
-            return false;
-        }
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
-            return false;
-        }
+        if (tenant == null) return false;
+        TenantStatus status = TenantStatus.fromString(tenant.getStatus());
+        if (status == null || !status.isUsable()) return false;
+        if (isExpired(tenant)) return false;
+        return true;
+    }
+
+    /**
+     * 检查租户是否允许登录（含 EXPIRED，允许查看历史数据）。
+     * 用于 JWT 认证过滤器实时校验。
+     */
+    public boolean isLoginAllowed(Long tenantId) {
+        Tenant tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null) return false;
+        TenantStatus status = TenantStatus.fromString(tenant.getStatus());
+        return status != null && status.allowsLogin();
+    }
+
+    /**
+     * 检测 TRIAL 状态租户是否试用到期，到期则自动转为 EXPIRED。
+     * 在登录或请求时调用，不依赖定时任务。
+     *
+     * @return 是否发生了状态变更
+     */
+    public boolean autoExpireIfTrialEnded(Tenant tenant) {
+        if (tenant == null) return false;
+        if (!TenantStatus.TRIAL.name().equals(tenant.getStatus())) return false;
+        if (tenant.getTrialEndAt() == null) return false;
+        if (tenant.getTrialEndAt().isAfter(LocalDateTime.now())) return false;
+        // 试用到期，自动转 EXPIRED
+        tenant.setStatus(TenantStatus.EXPIRED.name());
+        tenantMapper.updateById(tenant);
         return true;
     }
 
@@ -153,8 +197,12 @@ public class TenantService {
     public void updateTenantByPlatform(Long tenantId, String name, String contactName,
                                        String contactPhone, String address,
                                        Integer maxKnowledgeBases, Integer maxDocuments,
-                                       Integer maxAiDailyCalls, Object expiredAt,
-                                       java.util.Set<String> providedFields) {
+                                       Integer maxAiDailyCalls,
+                                       Integer maxUsers, Integer maxTechnicians,
+                                       Integer ticketMonthlyLimit,
+                                       String planCode, String planName,
+                                       Object expiredAt, Object trialEndAt,
+                                       Set<String> providedFields) {
         Tenant tenant = tenantMapper.selectById(tenantId);
         if (tenant == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "租户不存在");
@@ -167,6 +215,8 @@ public class TenantService {
         if (contactName != null) tenant.setContactName(contactName);
         if (contactPhone != null) tenant.setContactPhone(contactPhone);
         if (address != null) tenant.setAddress(address);
+        if (planCode != null) tenant.setPlanCode(planCode);
+        if (planName != null) tenant.setPlanName(planName);
         tenantMapper.updateById(tenant);
 
         // nullable 字段：仅对 JSON 中显式出现的字段执行 SET（含 null 值）
@@ -181,24 +231,109 @@ public class TenantService {
         if (providedFields.contains("maxAiDailyCalls")) {
             wrapper.set(Tenant::getMaxAiDailyCalls, maxAiDailyCalls);
         }
+        if (providedFields.contains("maxUsers")) {
+            wrapper.set(Tenant::getMaxUsers, maxUsers);
+        }
+        if (providedFields.contains("maxTechnicians")) {
+            wrapper.set(Tenant::getMaxTechnicians, maxTechnicians);
+        }
+        if (providedFields.contains("ticketMonthlyLimit")) {
+            wrapper.set(Tenant::getTicketMonthlyLimit, ticketMonthlyLimit);
+        }
         if (providedFields.contains("expiredAt")) {
             LocalDateTime expired = (expiredAt instanceof LocalDateTime) ? (LocalDateTime) expiredAt : null;
             wrapper.set(Tenant::getExpiredAt, expired);
         }
+        if (providedFields.contains("trialEndAt")) {
+            LocalDateTime trial = (trialEndAt instanceof LocalDateTime) ? (LocalDateTime) trialEndAt : null;
+            wrapper.set(Tenant::getTrialEndAt, trial);
+        }
         tenantMapper.update(null, wrapper);
     }
 
-    /** 启用租户 */
+    /** 启用租户（设为 ACTIVE，清除 trialEndAt） */
+    public void activateTenant(Long tenantId) {
+        Tenant tenant = requireTenant(tenantId);
+        requireNotPlatform(tenant);
+        TenantStatus from = TenantStatus.fromString(tenant.getStatus());
+        TenantStatus.validateTransition(from, TenantStatus.ACTIVE, tenant.getTenantCode());
+        tenant.setStatus(TenantStatus.ACTIVE.name());
+        tenant.setTrialEndAt(null);
+        tenantMapper.updateById(tenant);
+    }
+
+    /** 暂停租户 */
+    public void suspendTenant(Long tenantId) {
+        Tenant tenant = requireTenant(tenantId);
+        requireNotPlatform(tenant);
+        TenantStatus from = TenantStatus.fromString(tenant.getStatus());
+        TenantStatus.validateTransition(from, TenantStatus.SUSPENDED, tenant.getTenantCode());
+        tenant.setStatus(TenantStatus.SUSPENDED.name());
+        tenantMapper.updateById(tenant);
+    }
+
+    /** 关闭租户（终态） */
+    public void closeTenant(Long tenantId) {
+        Tenant tenant = requireTenant(tenantId);
+        requireNotPlatform(tenant);
+        TenantStatus from = TenantStatus.fromString(tenant.getStatus());
+        TenantStatus.validateTransition(from, TenantStatus.CLOSED, tenant.getTenantCode());
+        tenant.setStatus(TenantStatus.CLOSED.name());
+        tenantMapper.updateById(tenant);
+    }
+
+    /** 恢复租户（从 SUSPENDED/EXPIRED → ACTIVE） */
+    public void restoreTenant(Long tenantId) {
+        Tenant tenant = requireTenant(tenantId);
+        requireNotPlatform(tenant);
+        TenantStatus from = TenantStatus.fromString(tenant.getStatus());
+        TenantStatus.validateTransition(from, TenantStatus.ACTIVE, tenant.getTenantCode());
+        tenant.setStatus(TenantStatus.ACTIVE.name());
+        tenant.setTrialEndAt(null);
+        tenantMapper.updateById(tenant);
+    }
+
+    /** 应用套餐预设：设置 planCode + planName，并覆盖所有额度字段 */
+    public void applyPlanPreset(Long tenantId, String planCode) {
+        Tenant tenant = requireTenant(tenantId);
+        requireNotPlatform(tenant);
+        PlanPreset preset = PlanPreset.fromCode(planCode);
+        if (preset == null) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR,
+                    "无效的套餐: " + planCode + "，可选值: TRIAL/STARTER/PRO/LEGACY");
+        }
+        tenant.setPlanCode(preset.getCode());
+        tenant.setPlanName(preset.getDisplayName());
+        tenant.setMaxUsers(preset.getMaxUsers());
+        tenant.setMaxTechnicians(preset.getMaxTechnicians());
+        tenant.setMaxKnowledgeBases(preset.getMaxKnowledgeBases());
+        tenant.setMaxDocuments(preset.getMaxDocuments());
+        tenant.setMaxAiDailyCalls(preset.getMaxAiDailyCalls());
+        tenant.setTicketMonthlyLimit(preset.getTicketMonthlyLimit());
+        // TRIAL 套餐设 14 天试用期，其他套餐清除试用期
+        if (preset == PlanPreset.TRIAL) {
+            tenant.setTrialEndAt(LocalDateTime.now().plusDays(14));
+        } else {
+            tenant.setTrialEndAt(null);
+        }
+        tenantMapper.updateById(tenant);
+    }
+
+    // ==================== @Deprecated（保留兼容） ====================
+
+    /** @deprecated 使用 {@link #activateTenant(Long)} */
+    @Deprecated
     public void enableTenant(Long tenantId) {
         Tenant tenant = tenantMapper.selectById(tenantId);
         if (tenant == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "租户不存在");
         }
-        tenant.setStatus("ACTIVE");
+        tenant.setStatus(TenantStatus.ACTIVE.name());
         tenantMapper.updateById(tenant);
     }
 
-    /** 禁用租户 */
+    /** @deprecated 使用 {@link #suspendTenant(Long)} */
+    @Deprecated
     public void disableTenant(Long tenantId) {
         Tenant tenant = tenantMapper.selectById(tenantId);
         if (tenant == null) {
@@ -207,7 +342,28 @@ public class TenantService {
         if ("PLATFORM".equals(tenant.getTenantCode())) {
             throw new BusinessException(ResultCode.VALIDATION_ERROR, "不能禁用平台租户");
         }
-        tenant.setStatus("INACTIVE");
+        tenant.setStatus(TenantStatus.SUSPENDED.name());
         tenantMapper.updateById(tenant);
+    }
+
+    // ==================== 内部方法 ====================
+
+    private Tenant requireTenant(Long tenantId) {
+        Tenant tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "租户不存在");
+        }
+        return tenant;
+    }
+
+    private void requireNotPlatform(Tenant tenant) {
+        if ("PLATFORM".equals(tenant.getTenantCode())) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR, "不能操作平台租户");
+        }
+    }
+
+    private boolean isExpired(Tenant tenant) {
+        return tenant.getExpiredAt() != null
+                && tenant.getExpiredAt().isBefore(LocalDateTime.now());
     }
 }

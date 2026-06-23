@@ -4,8 +4,10 @@ import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
+import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.module.user.service.SysUserService;
 import com.repair.ai.saas.security.CurrentUser;
@@ -28,6 +30,7 @@ public class SysUserController {
     private final SysUserService sysUserService;
     private final OperationLogService operationLogService;
     private final RateLimiter rateLimiter;
+    private final TenantService tenantService;
 
     // ==================== 公开接口 ====================
 
@@ -56,6 +59,8 @@ public class SysUserController {
                                                         @CurrentUserInfo CurrentUser currentUser,
                                                         HttpServletRequest request) {
         RoleChecker.requireAdmin(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         SysUser user = sysUserService.createUser(currentUser.getTenantId(),
                 req.username, req.password, req.realName, req.phone, req.email, req.role);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -97,6 +102,8 @@ public class SysUserController {
                                          @CurrentUserInfo CurrentUser currentUser,
                                          HttpServletRequest request) {
         RoleChecker.requireAdmin(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         sysUserService.updateUser(currentUser.getTenantId(), id,
                 req.realName, req.phone, req.email, req.role);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -111,6 +118,8 @@ public class SysUserController {
                                                @CurrentUserInfo CurrentUser currentUser,
                                                HttpServletRequest request) {
         RoleChecker.requireAdmin(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         String status = body.get("status");
         sysUserService.updateStatus(currentUser.getTenantId(), id, status);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),

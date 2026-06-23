@@ -1,9 +1,11 @@
 package com.repair.ai.saas.module.knowledge.document.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.knowledge.document.entity.KnowledgeDocument;
 import com.repair.ai.saas.module.knowledge.document.service.KnowledgeDocumentService;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
+import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
 import com.repair.ai.saas.security.RoleChecker;
@@ -21,6 +23,7 @@ public class KnowledgeDocumentController {
 
     private final KnowledgeDocumentService documentService;
     private final OperationLogService operationLogService;
+    private final TenantService tenantService;
 
     /**
      * 上传文档并解析生成知识条目。
@@ -33,6 +36,8 @@ public class KnowledgeDocumentController {
             @CurrentUserInfo CurrentUser currentUser,
             HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
 
         KnowledgeDocument doc = documentService.upload(
                 currentUser.getTenantId(), knowledgeBaseId, file, currentUser.getUserId());
@@ -88,6 +93,8 @@ public class KnowledgeDocumentController {
             @CurrentUserInfo CurrentUser currentUser,
             HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
 
         documentService.delete(currentUser.getTenantId(), id);
 
@@ -107,6 +114,8 @@ public class KnowledgeDocumentController {
             @CurrentUserInfo CurrentUser currentUser,
             HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
 
         KnowledgeDocument doc = documentService.reparse(currentUser.getTenantId(), id);
 

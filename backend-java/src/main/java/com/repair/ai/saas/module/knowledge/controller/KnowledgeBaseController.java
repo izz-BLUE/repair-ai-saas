@@ -1,10 +1,12 @@
 package com.repair.ai.saas.module.knowledge.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.knowledge.entity.KnowledgeBase;
 import com.repair.ai.saas.module.knowledge.service.KnowledgeBaseService;
 import com.repair.ai.saas.module.operation.enums.OperationType;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
+import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
 import com.repair.ai.saas.security.RoleChecker;
@@ -21,12 +23,15 @@ public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
     private final OperationLogService operationLogService;
+    private final TenantService tenantService;
 
     @PostMapping
     public ApiResponse<KnowledgeBase> create(@RequestBody CreateKnowledgeBaseRequest req,
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         KnowledgeBase kb = knowledgeBaseService.create(
                 currentUser.getTenantId(), req.name(), req.description());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -64,6 +69,8 @@ public class KnowledgeBaseController {
                                     @CurrentUserInfo CurrentUser currentUser,
                                     HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         knowledgeBaseService.update(currentUser.getTenantId(), id, req.name(), req.description());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), "UPDATE_KNOWLEDGE_BASE", "KNOWLEDGE_BASE",
@@ -77,6 +84,8 @@ public class KnowledgeBaseController {
                                           @CurrentUserInfo CurrentUser currentUser,
                                           HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         knowledgeBaseService.updateStatus(currentUser.getTenantId(), id, req.status());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), "UPDATE_KNOWLEDGE_BASE_STATUS", "KNOWLEDGE_BASE",

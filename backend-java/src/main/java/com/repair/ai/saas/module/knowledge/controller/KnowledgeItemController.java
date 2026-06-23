@@ -1,10 +1,12 @@
 package com.repair.ai.saas.module.knowledge.controller;
 
 import com.repair.ai.saas.common.ApiResponse;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.ai.service.AiClient;
 import com.repair.ai.saas.module.knowledge.entity.KnowledgeItem;
 import com.repair.ai.saas.module.knowledge.service.KnowledgeItemService;
 import com.repair.ai.saas.module.operation.service.OperationLogService;
+import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.security.CurrentUser;
 import com.repair.ai.saas.security.CurrentUserInfo;
 import com.repair.ai.saas.security.RoleChecker;
@@ -25,12 +27,15 @@ public class KnowledgeItemController {
     private final KnowledgeItemService knowledgeItemService;
     private final OperationLogService operationLogService;
     private final AiClient aiClient;
+    private final TenantService tenantService;
 
     @PostMapping
     public ApiResponse<KnowledgeItem> create(@RequestBody CreateKnowledgeItemRequest req,
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         KnowledgeItem item = knowledgeItemService.create(
                 currentUser.getTenantId(), req.knowledgeBaseId(), req.title(),
                 req.question(), req.answer(), req.productType(),
@@ -72,6 +77,8 @@ public class KnowledgeItemController {
                                     @CurrentUserInfo CurrentUser currentUser,
                                     HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         knowledgeItemService.update(currentUser.getTenantId(), id,
                 req.knowledgeBaseId(), req.title(), req.question(), req.answer(),
                 req.productType(), req.faultType(), req.keywords(), req.sortOrder());
@@ -87,6 +94,8 @@ public class KnowledgeItemController {
                                           @CurrentUserInfo CurrentUser currentUser,
                                           HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         knowledgeItemService.updateStatus(currentUser.getTenantId(), id, req.status());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), "UPDATE_KNOWLEDGE_ITEM_STATUS", "KNOWLEDGE_ITEM",
@@ -102,6 +111,8 @@ public class KnowledgeItemController {
     public ApiResponse<Map<String, Object>> syncVectors(
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(
+                tenantService.getById(currentUser.getTenantId()));
         Long tenantId = currentUser.getTenantId();
 
         List<KnowledgeItem> items = knowledgeItemService.listAllActive(tenantId);

@@ -3,8 +3,10 @@ package com.repair.ai.saas.module.ticket.controller;
 import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.PhoneMasker;
+import com.repair.ai.saas.common.QuotaChecker;
 import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.repair.ai.saas.module.ai.entity.AiConversation;
@@ -16,6 +18,7 @@ import com.repair.ai.saas.module.tenant.service.TenantService;
 import com.repair.ai.saas.module.ticket.entity.RepairTicket;
 import com.repair.ai.saas.module.ticket.entity.TicketStatusLog;
 import com.repair.ai.saas.module.ticket.enums.TicketStatus;
+import com.repair.ai.saas.module.ticket.mapper.RepairTicketMapper;
 import com.repair.ai.saas.module.ticket.service.TicketService;
 import com.repair.ai.saas.module.user.entity.SysUser;
 import com.repair.ai.saas.security.CurrentUser;
@@ -46,6 +49,7 @@ public class TicketController {
     private final TenantService tenantService;
     private final OperationLogService operationLogService;
     private final AiConversationMapper aiConversationMapper;
+    private final RepairTicketMapper repairTicketMapper;
     private final RateLimiter rateLimiter;
 
     // ==================== 管理后台接口 ====================
@@ -87,6 +91,7 @@ public class TicketController {
                                                           @CurrentUserInfo CurrentUser currentUser,
                                                           HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         RepairTicket ticket = ticketService.createTicket(currentUser.getTenantId(),
                 req.customerId, req.productType, req.faultType, req.faultDescription,
                 req.priority, req.scheduledTime);
@@ -105,6 +110,7 @@ public class TicketController {
                                            @RequestBody UpdateTicketRequest req,
                                            @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.updateTicket(currentUser.getTenantId(), id,
                 req.productType, req.faultType, req.faultDescription, req.priority, req.scheduledTime);
         return ApiResponse.success();
@@ -116,6 +122,7 @@ public class TicketController {
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.assignTicket(currentUser.getTenantId(), id,
                 req.technicianId, req.scheduledTime, currentUser.getUserId());
         try {
@@ -134,6 +141,7 @@ public class TicketController {
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.reassignTicket(currentUser.getTenantId(), id,
                 req.technicianId, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -148,6 +156,7 @@ public class TicketController {
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         String remark = body != null ? body.get("remark") : null;
         ticketService.cancelTicket(currentUser.getTenantId(), id, currentUser.getUserId(), remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
@@ -161,6 +170,7 @@ public class TicketController {
                                           @CurrentUserInfo CurrentUser currentUser,
                                           HttpServletRequest request) {
         RoleChecker.requireAdminOrDispatcher(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.closeTicket(currentUser.getTenantId(), id, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), OperationType.CLOSE.name(), "TICKET",
@@ -214,16 +224,25 @@ public class TicketController {
         }
         var tenant = tenantService.getByTenantCode(tenantCode);
 
-        // 校验租户状态和门户启用状态
-        if (!"ACTIVE".equals(tenant.getStatus())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
-        }
+        // 试用到期自动转 EXPIRED
+        tenantService.autoExpireIfTrialEnded(tenant);
+
+        // 统一租户访问检查
+        TenantAccessChecker.requirePublicRepairAllowed(tenant);
+
+        // 校验门户启用状态
         if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
         }
-        // 校验租户到期
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
+
+        // 月工单额度检查
+        if (tenant.getTicketMonthlyLimit() != null) {
+            Long monthTicketCount = repairTicketMapper.selectCount(
+                    new LambdaQueryWrapper<RepairTicket>()
+                            .eq(RepairTicket::getTenantId, tenant.getId())
+                            .ge(RepairTicket::getCreatedAt, LocalDate.now().withDayOfMonth(1).atStartOfDay())
+            );
+            QuotaChecker.checkQuota(monthTicketCount, tenant.getTicketMonthlyLimit(), "本月工单");
         }
 
         RepairTicket ticket = ticketService.publicRepairRequest(tenant.getId(),
@@ -261,16 +280,11 @@ public class TicketController {
             throw new BusinessException(ResultCode.VALIDATION_ERROR, "手机号不能为空");
         }
 
-        // 租户校验（与公开报修一致）
+        // 租户校验（使用 TenantAccessChecker）
         var tenant = tenantService.getByTenantCode(tenantCode);
-        if (!"ACTIVE".equals(tenant.getStatus())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
-        }
+        TenantAccessChecker.requirePublicQueryAllowed(tenant);
         if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
-        }
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
         }
 
         // 查询工单（tenantId + ticketNo 隔离）
@@ -368,6 +382,7 @@ public class TicketController {
                                            @CurrentUserInfo CurrentUser currentUser,
                                            HttpServletRequest request) {
         RoleChecker.requireTechnician(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.startProcess(currentUser.getTenantId(), id, currentUser.getUserId());
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
                 currentUser.getUsername(), OperationType.START_PROCESS.name(), "TICKET",
@@ -381,6 +396,7 @@ public class TicketController {
                                              @CurrentUserInfo CurrentUser currentUser,
                                              HttpServletRequest request) {
         RoleChecker.requireTechnician(currentUser);
+        TenantAccessChecker.requireWriteAllowed(tenantService.getById(currentUser.getTenantId()));
         ticketService.completeTicket(currentUser.getTenantId(), id,
                 currentUser.getUserId(), req.repairResult, req.costNote, req.partsNote, req.remark);
         operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),

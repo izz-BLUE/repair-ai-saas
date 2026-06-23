@@ -4,6 +4,7 @@ import com.repair.ai.saas.common.ApiResponse;
 import com.repair.ai.saas.common.BusinessException;
 import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
+import com.repair.ai.saas.common.TenantAccessChecker;
 import com.repair.ai.saas.module.ai.service.AiService;
 import com.repair.ai.saas.module.ai.service.AiService.AiChatResult;
 import com.repair.ai.saas.module.ai.service.AiUsageService;
@@ -43,16 +44,15 @@ public class AiPublicController {
         // 根据 tenantCode 找租户
         Tenant tenant = tenantService.getByTenantCode(tenantCode);
 
-        // 校验租户状态和门户启用状态
-        if (!"ACTIVE".equals(tenant.getStatus())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务暂不可用");
-        }
+        // 试用到期自动转 EXPIRED
+        tenantService.autoExpireIfTrialEnded(tenant);
+
+        // 统一租户访问检查（AI 咨询：TRIAL/ACTIVE 可用，EXPIRED 不可用）
+        TenantAccessChecker.requireAiAllowed(tenant);
+
+        // 校验门户启用状态
         if (!Boolean.TRUE.equals(tenant.getPortalEnabled())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务门户暂未启用");
-        }
-        // 校验租户到期
-        if (tenant.getExpiredAt() != null && tenant.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "该企业服务已到期");
         }
 
         // AI 日调用量检查（公开接口受限额约束）
