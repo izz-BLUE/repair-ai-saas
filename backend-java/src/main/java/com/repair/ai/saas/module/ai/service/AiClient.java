@@ -21,7 +21,7 @@ public class AiClient {
     private final String agentUrl;
 
     public AiClient(RestTemplate restTemplate,
-                    @Value("${ai.agent.url:http://localhost:8090}") String agentUrl) {
+                    @Value("${app.ai.agent.url:http://localhost:8090}") String agentUrl) {
         this.restTemplate = restTemplate;
         this.agentUrl = agentUrl;
     }

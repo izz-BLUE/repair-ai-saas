@@ -48,4 +48,14 @@ public final class RoleChecker {
             throw new BusinessException(ResultCode.FORBIDDEN, "权限不足，仅平台管理员可操作");
         }
     }
+
+    /**
+     * 仅 PLATFORM 租户的 SUPER_ADMIN 可操作（平台管理接口）。
+     * 防止租户 ADMIN 创建本租户 SUPER_ADMIN 后越权访问平台接口。
+     */
+    public static void requirePlatformSuperAdmin(CurrentUser user) {
+        if (user == null || !user.isSuperAdmin() || !"PLATFORM".equals(user.getTenantCode())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "权限不足，仅平台管理员可操作");
+        }
+    }
 }

@@ -37,7 +37,7 @@ public class PlatformTenantController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
         var result = tenantService.listTenantsForPlatform(page, size);
         return ApiResponse.success(Map.of(
                 "total", result.getTotal(),
@@ -54,7 +54,7 @@ public class PlatformTenantController {
     public ApiResponse<Map<String, Object>> createTenant(
             @Valid @RequestBody CreateTenantRequest req,
             @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
 
         // 1. 创建租户
         Tenant tenant = tenantService.createTenant(req.name, req.contactName, req.contactPhone);
@@ -80,7 +80,7 @@ public class PlatformTenantController {
     @GetMapping("/{id}")
     public ApiResponse<Tenant> getTenant(@PathVariable Long id,
                                          @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
         Tenant tenant = tenantService.getById(id);
         if (tenant == null) {
             return ApiResponse.error("NOT_FOUND", "租户不存在");
@@ -98,7 +98,7 @@ public class PlatformTenantController {
     public ApiResponse<Void> updateTenant(@PathVariable Long id,
                                           @RequestBody java.util.Map<String, Object> body,
                                           @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
 
         // 解析 expiredAt：Jackson 将 ISO 字符串反序列化为 String，需手动转 LocalDateTime
         LocalDateTime expiredAt = null;
@@ -134,7 +134,7 @@ public class PlatformTenantController {
     @PostMapping("/{id}/enable")
     public ApiResponse<Void> enableTenant(@PathVariable Long id,
                                           @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
         tenantService.enableTenant(id);
         return ApiResponse.success();
     }
@@ -145,7 +145,7 @@ public class PlatformTenantController {
     @PostMapping("/{id}/disable")
     public ApiResponse<Void> disableTenant(@PathVariable Long id,
                                            @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
         tenantService.disableTenant(id);
         return ApiResponse.success();
     }
@@ -157,7 +157,7 @@ public class PlatformTenantController {
     public ApiResponse<Map<String, Object>> resetAdminPassword(
             @PathVariable Long id,
             @CurrentUserInfo CurrentUser currentUser) {
-        RoleChecker.requireSuperAdmin(currentUser);
+        RoleChecker.requirePlatformSuperAdmin(currentUser);
         String newPassword = PasswordGenerator.generate(12);
         sysUserService.resetAdminPassword(id, newPassword);
         return ApiResponse.success(Map.of("newPassword", newPassword));

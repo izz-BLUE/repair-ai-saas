@@ -69,7 +69,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 dbUser.getId(),
                 dbUser.getTenantId(),
                 dbUser.getUsername(),
-                dbUser.getRole()
+                dbUser.getRole(),
+                tokenInfo.tenantCode
         ));
 
         try {

@@ -6,7 +6,7 @@ import com.repair.ai.saas.common.PhoneMasker;
 import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.repair.ai.saas.module.ai.entity.AiConversation;
 import com.repair.ai.saas.module.ai.mapper.AiConversationMapper;
 import com.repair.ai.saas.module.operation.enums.OperationType;
@@ -410,7 +410,8 @@ public class TicketController {
 
     public record AssignRequest(
             @NotNull Long technicianId,
-            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime scheduledTime
+            @JsonDeserialize(using = com.repair.ai.saas.common.FlexibleLocalDateTimeDeserializer.class)
+            LocalDateTime scheduledTime
     ) {}
 
     public record RepairRequest(

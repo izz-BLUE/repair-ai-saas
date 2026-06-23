@@ -24,12 +24,13 @@ public class JwtTokenProvider {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(Long userId, Long tenantId, String username, String role) {
+    public String generateToken(Long userId, Long tenantId, String username, String role, String tenantCode) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("tenantId", tenantId);
         claims.put("username", username);
         claims.put("role", role);
+        claims.put("tenantCode", tenantCode);
 
         Date now = new Date();
         return Jwts.builder()
@@ -63,6 +64,7 @@ public class JwtTokenProvider {
         public Long tenantId;
         public String username;
         public String role;
+        public String tenantCode;
 
         public static TokenInfo fromClaims(Claims claims) {
             TokenInfo info = new TokenInfo();
@@ -70,6 +72,7 @@ public class JwtTokenProvider {
             info.tenantId = claims.get("tenantId", Long.class);
             info.username = claims.get("username", String.class);
             info.role = claims.get("role", String.class);
+            info.tenantCode = claims.get("tenantCode", String.class);
             return info;
         }
     }

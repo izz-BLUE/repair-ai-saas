@@ -11,6 +11,7 @@ public class CurrentUser {
     private Long tenantId;
     private String username;
     private String role;
+    private String tenantCode;
 
     public boolean isAdmin() {
         return Role.ADMIN.name().equals(role);

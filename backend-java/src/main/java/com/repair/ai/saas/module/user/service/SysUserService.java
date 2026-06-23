@@ -47,7 +47,7 @@ public class SysUserService {
 
         // 3. 生成 JWT
         String token = jwtTokenProvider.generateToken(
-                admin.getId(), tenant.getId(), admin.getUsername(), admin.getRole()
+                admin.getId(), tenant.getId(), admin.getUsername(), admin.getRole(), tenant.getTenantCode()
         );
 
         return new LoginResult(token, tenant.getTenantCode(), admin.getId(),
@@ -85,7 +85,7 @@ public class SysUserService {
         }
 
         String token = jwtTokenProvider.generateToken(
-                user.getId(), tenant.getId(), user.getUsername(), user.getRole()
+                user.getId(), tenant.getId(), user.getUsername(), user.getRole(), tenant.getTenantCode()
         );
 
         return new LoginResult(token, tenant.getTenantCode(), user.getId(),
@@ -100,6 +100,10 @@ public class SysUserService {
         Role roleEnum = Role.fromString(role);
         if (roleEnum == null) {
             throw new BusinessException(ResultCode.VALIDATION_ERROR, "无效的角色: " + role);
+        }
+        // 租户管理员不能创建平台超级管理员
+        if (roleEnum == Role.SUPER_ADMIN) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "租户管理员不能创建平台超级管理员");
         }
         // 用户名唯一性（租户内）
         Long count = sysUserMapper.selectCount(
@@ -160,6 +164,10 @@ public class SysUserService {
         if (user == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "员工不存在");
         }
+        // 禁止租户管理员修改平台超级管理员
+        if (Role.SUPER_ADMIN.name().equals(user.getRole())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "不能修改平台超级管理员");
+        }
         if (realName != null) user.setRealName(realName);
         if (phone != null) user.setPhone(phone);
         if (email != null) user.setEmail(email);
@@ -167,6 +175,10 @@ public class SysUserService {
             Role roleEnum = Role.fromString(role);
             if (roleEnum == null) {
                 throw new BusinessException(ResultCode.VALIDATION_ERROR, "无效的角色: " + role);
+            }
+            // 禁止租户管理员将用户角色修改为平台超级管理员
+            if (roleEnum == Role.SUPER_ADMIN) {
+                throw new BusinessException(ResultCode.FORBIDDEN, "不能将用户角色设置为平台超级管理员");
             }
             user.setRole(roleEnum.name());
         }
