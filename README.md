@@ -275,6 +275,8 @@ pytest tests/ -v
 | V0.5.2 | 生产配置加固与小程序联调修复 | ✅ |
 | V0.5.3 | 公开接口 Redis 限流 + 生产部署验证 | ✅ |
 | V0.5.4 | 验收准备与演示数据补齐 | ✅ |
+| V0.5.5 | 本地全流程 Smoke Test + RateLimiter 修复 | ✅ |
+| V0.5.6 | 小程序师傅端 DevTools 验收 | ✅ |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 

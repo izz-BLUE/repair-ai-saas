@@ -373,6 +373,44 @@
 
 ---
 
+## V0.5.5 — 本地全流程 Smoke Test ✅
+
+**目标：** 本地端到端全流程验证，修 bug 不新增功能。
+
+**执行：**
+- 16 项 smoke test 全流程验证通过：客户报修 → 后台派单 → 师傅处理 → 完工 → 客户查询状态同步
+- 发现并修复 Redis 7.4 Lua 脚本类型兼容 bug（RateLimiter 限流完全不生效）
+- RateLimiter Lua 脚本 → ZSetOperations + SessionCallback（Redis 事务）
+- 4 个限流端点全部验证 429 生效（登录/报修/查询/AI 聊天）
+- AI Chat 降级验证通过（agent-python 不可用时返回兜底回答，不报 500）
+- Java 测试 113/113 全通过
+
+**修复文件：** `common/RateLimiter.java`, `RateLimiterTest.java`
+
+**新增表：** 无
+
+**环境限制：** 小程序师傅端未验收（当前环境无微信开发者工具），Python Agent 因 Windows grpc DLL 兼容问题无法启动
+
+---
+
+## V0.5.6 — 小程序师傅端 DevTools 验收 ✅
+
+**目标：** 在微信开发者工具中完成师傅端全流程验收。
+
+**执行：**
+- tenantCode: TA7P55N，technician: technician1 / Zhang Shifu
+- 工单号: TK202606230005
+- 师傅端全流程通过：登录 → 工单列表 → 工单详情 → 开始处理 → 完成工单
+- 客户查询状态同步验证通过：状态变为"已完成"，时间线完整（待处理/已派单/处理中/已完成）
+- 纯文档更新，无业务代码变更
+
+**已知问题（待修复）：**
+- Web 后台派单弹窗曾提示 500 错误，但工单实际已进入已派单状态。初步怀疑 appointmentTime 格式、前端错误处理或后端响应异常
+
+**修改文件：** 仅文档（deployment-verification.md, miniapp-devtools-checklist.md, roadmap.md, README.md）
+
+---
+
 ## V0.5.5+ — 后续规划
 
 ---
