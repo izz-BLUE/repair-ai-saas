@@ -30,6 +30,16 @@ echo "  后端地址: $BASE_URL"
 echo "============================================"
 echo ""
 
+# ---------- 0. 依赖检查 ----------
+if ! command -v curl &>/dev/null; then
+    echo -e "${RED}[ERROR]${NC} curl 未安装，请先安装 curl"
+    exit 1
+fi
+if ! command -v jq &>/dev/null; then
+    echo -e "${RED}[ERROR]${NC} jq 未安装，请先安装 jq"
+    exit 1
+fi
+
 # ---------- 1. 等待后端就绪 ----------
 info "等待后端服务就绪..."
 WAITED=0
@@ -54,7 +64,7 @@ info "平台管理员登录..."
 SUPER_ADMIN_TOKEN=$(curl -s -X POST "$BASE_URL/api/public/login" \
     -H "Content-Type: application/json" \
     -d '{"tenantCode":"PLATFORM","username":"superadmin","password":"Admin@2024"}' \
-    | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    | jq -r '.data.token')
 
 if [[ -z "$SUPER_ADMIN_TOKEN" ]]; then
     err "平台管理员登录失败，请检查默认密码是否已修改"
@@ -69,10 +79,10 @@ CREATE_RESULT=$(curl -s -X POST "$BASE_URL/api/platform/tenants" \
     -H "Authorization: Bearer $SUPER_ADMIN_TOKEN" \
     -d '{"name":"顺德XX维修服务","contactName":"张经理","contactPhone":"13800001234"}')
 
-TENANT_CODE=$(echo "$CREATE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['tenant']['tenantCode'])" 2>/dev/null)
-TENANT_ID=$(echo "$CREATE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['tenant']['id'])" 2>/dev/null)
-ADMIN_USERNAME=$(echo "$CREATE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['adminUsername'])" 2>/dev/null)
-ADMIN_PASSWORD=$(echo "$CREATE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['adminPassword'])" 2>/dev/null)
+TENANT_CODE=$(echo "$CREATE_RESULT" | jq -r '.data.tenant.tenantCode')
+TENANT_ID=$(echo "$CREATE_RESULT" | jq -r '.data.tenant.id')
+ADMIN_USERNAME=$(echo "$CREATE_RESULT" | jq -r '.data.adminUsername')
+ADMIN_PASSWORD=$(echo "$CREATE_RESULT" | jq -r '.data.adminPassword')
 
 if [[ -z "$TENANT_CODE" ]]; then
     err "创建租户失败: $CREATE_RESULT"
@@ -94,7 +104,7 @@ info "租户管理员登录..."
 ADMIN_TOKEN=$(curl -s -X POST "$BASE_URL/api/public/login" \
     -H "Content-Type: application/json" \
     -d "{\"tenantCode\":\"$TENANT_CODE\",\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" \
-    | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    | jq -r '.data.token')
 
 if [[ -z "$ADMIN_TOKEN" ]]; then
     err "租户管理员登录失败"
@@ -109,7 +119,7 @@ KB_RESULT=$(curl -s -X POST "$BASE_URL/api/admin/knowledge-bases" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"name":"空调维修FAQ","description":"常见空调故障排查与维修指南"}')
 
-KB_ID=$(echo "$KB_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
+KB_ID=$(echo "$KB_RESULT" | jq -r '.data.id')
 ok "知识库创建成功 (ID: $KB_ID)"
 
 # ---------- 7. 创建示例知识条目 ----------
@@ -148,7 +158,7 @@ CREATE_TECH_RESULT=$(curl -s -X POST "$BASE_URL/api/admin/users" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"realName":"李师傅","phone":"13900005678","username":"technician1","password":"Tech@2024","role":"TECHNICIAN"}')
 
-TECH_ID=$(echo "$CREATE_TECH_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
+TECH_ID=$(echo "$CREATE_TECH_RESULT" | jq -r '.data.id')
 if [[ -z "$TECH_ID" ]]; then
     err "创建师傅账号失败: $CREATE_TECH_RESULT"
     exit 1
