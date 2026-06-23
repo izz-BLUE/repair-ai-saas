@@ -21,7 +21,8 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/public/**"
+            "/api/public/**",
+            "/api/health"
     );
 
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
