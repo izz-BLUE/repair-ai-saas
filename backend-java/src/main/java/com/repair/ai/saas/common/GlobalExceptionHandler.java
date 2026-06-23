@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +34,14 @@ public class GlobalExceptionHandler {
                 .orElse("参数校验失败");
         log.warn("[{}] Validation error: {}", traceId, message);
         return ResponseEntity.badRequest().body(ApiResponse.error(ResultCode.VALIDATION_ERROR, message).withTraceId(traceId));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<?>> handleMessageNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+        String traceId = genTraceId();
+        log.warn("[{}] Message not readable: {}", traceId, e.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(ResultCode.BAD_REQUEST, "请求参数格式错误，请检查输入内容").withTraceId(traceId));
     }
 
     @ExceptionHandler(Exception.class)

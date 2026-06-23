@@ -149,8 +149,8 @@ docker compose -f docker-compose.prod.yml ps mysql
 
 **验收工单：** TK202606230005，tenantCode: TA7P55N
 
-**已知问题（待修复）：**
-- Web 后台派单弹窗曾提示服务器内部错误 / 500，但工单实际已进入已派单状态。初步怀疑 appointmentTime 格式、前端错误处理或后端响应异常。该问题不影响小程序师傅端验收结论，需后续单独排查修复。
+**已知问题（已修复 V0.5.7）：**
+- ~~Web 后台派单弹窗曾提示服务器内部错误 / 500，但工单实际已进入已派单状态。初步怀疑 appointmentTime 格式、前端错误处理或后端响应异常。~~ → V0.5.7 已修复：前端改为 ISO-8601 T 分隔格式，后端添加 @JsonFormat 兼容 + HttpMessageNotReadableException 处理器。该问题不影响小程序师傅端验收结论，需后续单独排查修复。
 
 ### 限流验证
 

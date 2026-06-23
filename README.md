@@ -277,6 +277,7 @@ pytest tests/ -v
 | V0.5.4 | 验收准备与演示数据补齐 | ✅ |
 | V0.5.5 | 本地全流程 Smoke Test + RateLimiter 修复 | ✅ |
 | V0.5.6 | 小程序师傅端 DevTools 验收 | ✅ |
+| V0.5.7 | Web 派单弹窗 500 修复 | ✅ |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 

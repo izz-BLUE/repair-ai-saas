@@ -135,7 +135,7 @@ const TicketPage: React.FC = () => {
         technicianId: values.technicianId,
       };
       if (values.scheduledTime) {
-        data.scheduledTime = (values.scheduledTime as Dayjs).format('YYYY-MM-DD HH:mm:ss');
+        data.scheduledTime = (values.scheduledTime as Dayjs).format('YYYY-MM-DDTHH:mm:ss');
       }
       await assignTicket(currentTicket.id, data);
       message.success('派单成功');

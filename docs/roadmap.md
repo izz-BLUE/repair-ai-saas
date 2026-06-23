@@ -411,6 +411,22 @@
 
 ---
 
+## V0.5.7 — Web 派单弹窗 500 修复 ✅
+
+**目标：** 修复 Web 后台工单详情点击"派单"时填写预约时间返回 500 的问题。
+
+**修复：**
+- 前端 `scheduledTime` 格式从 `YYYY-MM-DD HH:mm:ss`（空格分隔）改为 `YYYY-MM-DDTHH:mm:ss`（ISO-8601 T 分隔）
+- 后端 `AssignRequest.scheduledTime` 添加 `@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")` 兼容空格分隔格式
+- `GlobalExceptionHandler` 新增 `HttpMessageNotReadableException` 处理器，返回 400 而非 500
+- `TicketController.assignTicket` 中操作日志记录改为 try-catch，防止日志写入失败影响派单响应
+
+**修改文件：** `TicketPage.tsx`, `TicketController.java`, `GlobalExceptionHandler.java`
+
+**新增表：** 无
+
+---
+
 ## V0.5.5+ — 后续规划
 
 ---

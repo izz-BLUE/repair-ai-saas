@@ -6,6 +6,7 @@ import com.repair.ai.saas.common.PhoneMasker;
 import com.repair.ai.saas.common.RateLimiter;
 import com.repair.ai.saas.common.ResultCode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.repair.ai.saas.module.ai.entity.AiConversation;
 import com.repair.ai.saas.module.ai.mapper.AiConversationMapper;
 import com.repair.ai.saas.module.operation.enums.OperationType;
@@ -25,6 +26,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class TicketController {
@@ -115,9 +118,13 @@ public class TicketController {
         RoleChecker.requireAdminOrDispatcher(currentUser);
         ticketService.assignTicket(currentUser.getTenantId(), id,
                 req.technicianId, req.scheduledTime, currentUser.getUserId());
-        operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
-                currentUser.getUsername(), OperationType.ASSIGN.name(), "TICKET",
-                String.valueOf(id), "派单", request.getRemoteAddr());
+        try {
+            operationLogService.record(currentUser.getTenantId(), currentUser.getUserId(),
+                    currentUser.getUsername(), OperationType.ASSIGN.name(), "TICKET",
+                    String.valueOf(id), "派单", request.getRemoteAddr());
+        } catch (Exception e) {
+            log.warn("派单操作日志记录失败: ticketId={}", id, e);
+        }
         return ApiResponse.success();
     }
 
@@ -403,7 +410,7 @@ public class TicketController {
 
     public record AssignRequest(
             @NotNull Long technicianId,
-            LocalDateTime scheduledTime
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime scheduledTime
     ) {}
 
     public record RepairRequest(
