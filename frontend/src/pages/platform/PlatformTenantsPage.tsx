@@ -1,14 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Table, Button, Tag, Space, Modal, Form, Input, App, Popconfirm, Descriptions,
-  Dropdown,
+  Table, Button, Tag, Space, Modal, Form, Input, App, Descriptions,
+  Dropdown, Select, Row, Col, Drawer, Divider, Alert, Typography,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined, DownOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined, ReloadOutlined, SearchOutlined,
+  ClearOutlined, MoreOutlined, EyeOutlined,
+} from '@ant-design/icons';
 import {
   listTenants, createTenant, resetAdminPassword,
   activateTenant, suspendTenant, restoreTenant, closeTenant, applyPlan,
   type PlatformTenant,
 } from '../../api/platform';
+
+const { Text } = Typography;
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
   TRIAL: { color: 'blue', label: '试用中' },
@@ -19,10 +24,10 @@ const STATUS_MAP: Record<string, { color: string; label: string }> = {
 };
 
 const PLAN_OPTIONS = [
-  { key: 'TRIAL', label: '试用版 (TRIAL)' },
-  { key: 'STARTER', label: '入门版 (STARTER)' },
-  { key: 'PRO', label: '专业版 (PRO)' },
-  { key: 'LEGACY', label: '历史版 (LEGACY)' },
+  { value: 'TRIAL', label: '试用版' },
+  { value: 'STARTER', label: '入门版' },
+  { value: 'PRO', label: '专业版' },
+  { value: 'LEGACY', label: '历史版' },
 ];
 
 function formatDate(d: string | null): string {
@@ -48,8 +53,16 @@ const PlatformTenantsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createResult, setCreateResult] = useState<{ tenantCode: string; adminUsername: string; adminPassword: string } | null>(null);
+  const [createPlan, setCreatePlan] = useState('TRIAL');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTenant, setDrawerTenant] = useState<PlatformTenant | null>(null);
   const [form] = Form.useForm();
   const { message, modal } = App.useApp();
+
+  // 筛选状态
+  const [keyword, setKeyword] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterPlan, setFilterPlan] = useState<string>('');
 
   const fetchData = async (p = 1) => {
     setLoading(true);
@@ -65,6 +78,30 @@ const PlatformTenantsPage: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // 前端过滤（后端暂不支持筛选参数）
+  const filteredData = useMemo(() => {
+    return data.filter((t) => {
+      if (keyword.trim()) {
+        const kw = keyword.trim().toLowerCase();
+        const match =
+          (t.name || '').toLowerCase().includes(kw) ||
+          (t.tenantCode || '').toLowerCase().includes(kw) ||
+          (t.contactName || '').toLowerCase().includes(kw) ||
+          (t.contactPhone || '').toLowerCase().includes(kw);
+        if (!match) return false;
+      }
+      if (filterStatus && t.status !== filterStatus) return false;
+      if (filterPlan && t.planCode !== filterPlan) return false;
+      return true;
+    });
+  }, [data, keyword, filterStatus, filterPlan]);
+
+  const handleResetFilters = () => {
+    setKeyword('');
+    setFilterStatus('');
+    setFilterPlan('');
+  };
+
   const withAction = async (id: number, fn: () => Promise<void>, okMsg: string) => {
     setActionLoading(id);
     try {
@@ -78,19 +115,43 @@ const PlatformTenantsPage: React.FC = () => {
     }
   };
 
+  // ============ 创建租户 ============
+
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
       const res = await createTenant(values);
+      const tenant = res.tenant;
+      // 如果选择了非 TRIAL 套餐，创建后再应用
+      if (createPlan !== 'TRIAL') {
+        try {
+          await applyPlan(tenant.id, createPlan);
+          message.success(`租户创建成功（${PLAN_OPTIONS.find(p => p.value === createPlan)?.label || createPlan}）`);
+        } catch {
+          message.warning('租户已创建，但应用套餐失败，当前为试用版');
+        }
+      } else {
+        message.success('租户创建成功');
+      }
       setCreateResult({
-        tenantCode: res.tenant.tenantCode,
+        tenantCode: tenant.tenantCode,
         adminUsername: res.adminUsername,
         adminPassword: res.adminPassword,
       });
       form.resetFields();
+      setCreatePlan('TRIAL');
       fetchData();
-    } catch { /* validation */ }
+    } catch { /* validation or API error */ }
   };
+
+  const handleCreateCancel = () => {
+    setCreateOpen(false);
+    setCreateResult(null);
+    setCreatePlan('TRIAL');
+    form.resetFields();
+  };
+
+  // ============ 状态操作 ============
 
   const handleSuspend = (record: PlatformTenant) => {
     modal.confirm({
@@ -117,16 +178,16 @@ const PlatformTenantsPage: React.FC = () => {
 
   const handleClose = (record: PlatformTenant) => {
     modal.confirm({
-      title: '确认关闭租户？',
-      content: '关闭后该租户将无法登录和使用任何功能，此操作不可随意恢复。如需恢复请联系开发人员。',
-      okText: '确认关闭',
+      title: '确认永久关闭租户？',
+      content: '永久关闭后该租户将无法登录和使用服务，且当前版本不支持在界面恢复。如只是临时停用，请使用"暂停"。',
+      okText: '确认永久关闭',
       okType: 'danger',
-      onOk: () => withAction(record.id, () => closeTenant(record.id), '已关闭'),
+      onOk: () => withAction(record.id, () => closeTenant(record.id), '已永久关闭'),
     });
   };
 
   const handleApplyPlan = (record: PlatformTenant, planCode: string) => {
-    const planLabel = PLAN_OPTIONS.find(p => p.key === planCode)?.label || planCode;
+    const planLabel = PLAN_OPTIONS.find(p => p.value === planCode)?.label || planCode;
     modal.confirm({
       title: '确认应用套餐？',
       content: `应用「${planLabel}」将覆盖当前所有额度设置，确认继续？`,
@@ -135,19 +196,19 @@ const PlatformTenantsPage: React.FC = () => {
     });
   };
 
-  const handleResetPwd = async (id: number) => {
-    const res = await resetAdminPassword(id);
-    Modal.info({
-      title: '密码已重置',
-      content: <div><p>新密码：<code>{res.newPassword}</code></p><p>请及时通知企业管理员修改密码。</p></div>,
-    });
-  };
+  // ============ 表格列定义 ============
 
   const columns = [
-    { title: '企业名称', dataIndex: 'name', key: 'name', width: 140, render: (v: string) => v || '-' },
+    {
+      title: '企业名称', dataIndex: 'name', key: 'name', width: 160,
+      render: (v: string, record: PlatformTenant) => (
+        <a style={{ color: '#2563eb', cursor: 'pointer' }} onClick={() => { setDrawerTenant(record); setDrawerOpen(true); }}>
+          {v || '-'}
+        </a>
+      ),
+    },
     { title: '租户编码', dataIndex: 'tenantCode', key: 'tenantCode', width: 100, render: (v: string) => <code>{v}</code> },
     { title: '联系人', dataIndex: 'contactName', key: 'contactName', width: 80, render: (v: string) => v || '-' },
-    { title: '电话', dataIndex: 'contactPhone', key: 'contactPhone', width: 110, render: (v: string) => v || '-' },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 80,
       render: (v: string) => {
@@ -156,7 +217,7 @@ const PlatformTenantsPage: React.FC = () => {
       },
     },
     {
-      title: '套餐', dataIndex: 'planName', key: 'planName', width: 90,
+      title: '套餐', dataIndex: 'planName', key: 'planName', width: 80,
       render: (v: string, record: PlatformTenant) => {
         const name = v || record.planCode;
         return name ? <Tag color="purple">{name}</Tag> : '-';
@@ -165,102 +226,191 @@ const PlatformTenantsPage: React.FC = () => {
     {
       title: '试用到期', dataIndex: 'trialEndAt', key: 'trialEndAt', width: 100,
       render: (v: string, record: PlatformTenant) =>
-        record.status === 'TRIAL' && v ? formatDateShort(v) : '-',
+        record.status === 'TRIAL' && v ? (
+          <Text style={{ fontSize: 13, color: '#f59e0b' }}>{formatDateShort(v)}</Text>
+        ) : '-',
     },
     {
-      title: '到期时间', dataIndex: 'expiredAt', key: 'expiredAt', width: 100,
+      title: '服务到期', dataIndex: 'expiredAt', key: 'expiredAt', width: 100,
       render: (v: string) => v ? formatDateShort(v) : '-',
-    },
-    {
-      title: '门户', dataIndex: 'portalEnabled', key: 'portalEnabled', width: 70,
-      render: (v: boolean) => v ? <Tag color="blue">已启用</Tag> : <Tag>已关闭</Tag>,
-    },
-    {
-      title: '员工', dataIndex: 'maxUsers', key: 'maxUsers', width: 60,
-      render: (v: number | null) => formatNullable(v),
-    },
-    {
-      title: '师傅', dataIndex: 'maxTechnicians', key: 'maxTechnicians', width: 60,
-      render: (v: number | null) => formatNullable(v),
-    },
-    {
-      title: 'AI限额', dataIndex: 'maxAiDailyCalls', key: 'maxAiDailyCalls', width: 70,
-      render: (v: number | null) => formatNullable(v),
-    },
-    {
-      title: '月工单', dataIndex: 'ticketMonthlyLimit', key: 'ticketMonthlyLimit', width: 70,
-      render: (v: number | null) => formatNullable(v),
     },
     { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 140, render: (v: string) => formatDate(v) },
     {
-      title: '操作', key: 'action', width: 280, fixed: 'right' as const,
+      title: '操作', key: 'action', width: 140, fixed: 'right' as const,
       render: (_: unknown, record: PlatformTenant) => {
         const isLoading = actionLoading === record.id;
         const isClosed = record.status === 'CLOSED';
         const isSuspended = record.status === 'SUSPENDED';
         const isExpired = record.status === 'EXPIRED';
         const isActive = record.status === 'ACTIVE';
+        const isTrial = record.status === 'TRIAL';
+
+        // CLOSED 终态：只显示详情，不可做任何操作
+        if (isClosed) {
+          return (
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => { setDrawerTenant(record); setDrawerOpen(true); }}
+            >
+              详情
+            </Button>
+          );
+        }
+
+        const menuItems = [
+          // 应用套餐
+          {
+            key: 'plan-group', type: 'group' as const, label: '应用套餐',
+          },
+          ...PLAN_OPTIONS.map(p => ({
+            key: `plan-${p.value}`,
+            label: p.label,
+            onClick: () => handleApplyPlan(record, p.value),
+          })),
+          { key: 'div1', type: 'divider' as const },
+          // 状态操作
+          ...(isActive || isTrial ? [
+            { key: 'suspend', label: <span style={{ color: '#f59e0b' }}>暂停</span>, onClick: () => handleSuspend(record) },
+          ] : []),
+          ...((isSuspended || isExpired) ? [
+            { key: 'activate', label: <span style={{ color: '#10b981' }}>启用</span>, onClick: () => handleActivate(record) },
+            { key: 'restore', label: '恢复', onClick: () => handleRestore(record) },
+          ] : []),
+          ...(!isActive && !isTrial && !isSuspended && !isExpired ? [
+            { key: 'activate', label: <span style={{ color: '#10b981' }}>启用</span>, onClick: () => handleActivate(record) },
+          ] : []),
+          { key: 'div2', type: 'divider' as const },
+          { key: 'close', label: <span style={{ color: '#ef4444' }}>永久关闭</span>, onClick: () => handleClose(record) },
+          { key: 'div3', type: 'divider' as const },
+          // 重置密码
+          { key: 'reset-pwd', label: '重置密码', onClick: () => {
+            resetAdminPassword(record.id).then(res => {
+              Modal.info({
+                title: '密码已重置',
+                content: <div><p>新密码：<code>{res.newPassword}</code></p><p>请及时通知企业管理员修改密码。</p></div>,
+              });
+            });
+          }},
+        ];
 
         return (
-          <Space size="small" wrap>
-            {/* 启用/暂停 */}
-            {!isClosed && (
-              isActive ? (
-                <Button size="small" danger loading={isLoading}
-                  onClick={() => handleSuspend(record)}>
-                  暂停
-                </Button>
-              ) : (
-                <Button size="small" type="primary" loading={isLoading}
-                  onClick={() => handleActivate(record)}>
-                  启用
-                </Button>
-              )
-            )}
-
-            {/* 恢复 */}
-            {(isSuspended || isExpired) && (
-              <Button size="small" loading={isLoading}
-                onClick={() => handleRestore(record)}>
-                恢复
+          <Space size="small">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => { setDrawerTenant(record); setDrawerOpen(true); }}
+            >
+              详情
+            </Button>
+            <Dropdown menu={{ items: menuItems }} disabled={isLoading} trigger={['click']}>
+              <Button size="small" loading={isLoading} icon={<MoreOutlined />}>
+                更多
               </Button>
-            )}
-
-            {/* 关闭 */}
-            {!isClosed && (
-              <Button size="small" danger loading={isLoading}
-                onClick={() => handleClose(record)}>
-                关闭
-              </Button>
-            )}
-
-            {/* 应用套餐 */}
-            {!isClosed && (
-              <Dropdown
-                menu={{
-                  items: PLAN_OPTIONS.map(p => ({
-                    key: p.key,
-                    label: p.label,
-                    onClick: () => handleApplyPlan(record, p.key),
-                  })),
-                }}
-                disabled={isLoading}
-              >
-                <Button size="small" loading={isLoading}>
-                  套餐 <DownOutlined />
-                </Button>
-              </Dropdown>
-            )}
-
-            {/* 重置密码 */}
-            <Popconfirm title="确认重置该租户管理员密码？" onConfirm={() => handleResetPwd(record.id)}>
-              <Button size="small" loading={isLoading}>重置密码</Button>
-            </Popconfirm>
+            </Dropdown>
           </Space>
         );
       },
     },
   ];
+
+  // ============ Drawer 字段行 ============
+
+  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div style={{ marginBottom: 12 }}>
+      <Text style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 2 }}>{label}</Text>
+      <div>{children}</div>
+    </div>
+  );
+
+  const FT = ({ label, value, mono }: { label: string; value: string | null; mono?: boolean }) => (
+    <F label={label}>
+      <Text style={mono ? { fontFamily: 'monospace', fontSize: 13 } : { fontSize: 13 }}>
+        {value || '-'}
+      </Text>
+    </F>
+  );
+
+  const renderDrawerContent = (t: PlatformTenant) => {
+    const sm = STATUS_MAP[t.status];
+    return (
+      <div>
+        {/* 基础信息 */}
+        <Text strong style={{ fontSize: 14, color: '#0f172a' }}>基础信息</Text>
+        <Divider style={{ margin: '8px 0 12px' }} />
+        <Row gutter={[24, 0]}>
+          <Col span={12}><FT label="企业名称" value={t.name} /></Col>
+          <Col span={12}><FT label="租户编码" value={t.tenantCode} mono /></Col>
+          <Col span={12}><FT label="联系人" value={t.contactName} /></Col>
+          <Col span={12}><FT label="电话" value={t.contactPhone} /></Col>
+          <Col span={24}><FT label="地址" value={t.address} /></Col>
+        </Row>
+
+        {/* 生命周期 */}
+        <Text strong style={{ fontSize: 14, color: '#0f172a', display: 'block', marginTop: 16 }}>生命周期</Text>
+        <Divider style={{ margin: '8px 0 12px' }} />
+        <Row gutter={[24, 0]}>
+          <Col span={12}>
+            <F label="状态">{sm ? <Tag color={sm.color}>{sm.label}</Tag> : <Tag>{t.status}</Tag>}</F>
+          </Col>
+          <Col span={12}>
+            <F label="套餐">{t.planName ? <Tag color="purple">{t.planName}</Tag> : t.planCode ? <Tag color="purple">{t.planCode}</Tag> : '-'}</F>
+          </Col>
+          <Col span={12}><FT label="试用到期" value={t.trialEndAt ? formatDate(t.trialEndAt) : null} /></Col>
+          <Col span={12}><FT label="服务到期" value={t.expiredAt ? formatDate(t.expiredAt) : null} /></Col>
+          <Col span={12}><FT label="创建时间" value={formatDate(t.createdAt)} /></Col>
+          <Col span={12}><FT label="更新时间" value={formatDate(t.updatedAt)} /></Col>
+        </Row>
+
+        {/* 额度信息 */}
+        <Text strong style={{ fontSize: 14, color: '#0f172a', display: 'block', marginTop: 16 }}>额度信息</Text>
+        <Divider style={{ margin: '8px 0 12px' }} />
+        <Row gutter={[24, 0]}>
+          {([
+            ['员工上限', t.maxUsers],
+            ['师傅上限', t.maxTechnicians],
+            ['知识库上限', t.maxKnowledgeBases],
+            ['文档上限', t.maxDocuments],
+            ['AI 日限额', t.maxAiDailyCalls],
+            ['月工单限额', t.ticketMonthlyLimit],
+          ] as [string, number | null][]).map(([label, val]) => (
+            <Col span={12} key={label}>
+              <F label={label}><Text style={{ fontSize: 13 }}>{formatNullable(val)}</Text></F>
+            </Col>
+          ))}
+        </Row>
+
+        {/* 门户信息 */}
+        <Text strong style={{ fontSize: 14, color: '#0f172a', display: 'block', marginTop: 16 }}>门户信息</Text>
+        <Divider style={{ margin: '8px 0 12px' }} />
+        <Row gutter={[24, 0]}>
+          <Col span={12}>
+            <F label="门户开关">
+              <Tag color={t.portalEnabled ? 'blue' : 'default'}>
+                {t.portalEnabled ? '配置已启用' : '配置已关闭'}
+              </Tag>
+            </F>
+          </Col>
+          <Col span={12}>
+            <F label="门户访问">
+              {(() => {
+                const st = t.status;
+                if (st === 'CLOSED') return <Tag color="default">不可访问（租户已关闭）</Tag>;
+                if (st === 'SUSPENDED') return <Tag color="orange">不可访问（租户已暂停）</Tag>;
+                if (st === 'EXPIRED') return <Tag color="red">不可访问（租户已到期）</Tag>;
+                if (!t.portalEnabled) return <Tag color="default">不可访问（门户开关已关闭）</Tag>;
+                return <Tag color="green">可访问</Tag>;
+              })()}
+            </F>
+          </Col>
+          <Col span={12}><FT label="门户标题" value={t.portalTitle} /></Col>
+          <Col span={24}><FT label="门户描述" value={t.portalDescription} /></Col>
+        </Row>
+      </div>
+    );
+  };
+
+  // ============ 页面渲染 ============
 
   return (
     <div>
@@ -271,38 +421,121 @@ const PlatformTenantsPage: React.FC = () => {
         </div>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => fetchData(page)}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCreateResult(null); setCreateOpen(true); }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCreateResult(null); setCreatePlan('TRIAL'); setCreateOpen(true); }}>
             创建租户
           </Button>
         </Space>
       </div>
 
+      {/* 筛选区 */}
+      <div style={{
+        marginBottom: 16, padding: '12px 16px',
+        background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0',
+      }}>
+        <Row gutter={[12, 8]} align="middle">
+          <Col xs={24} sm={8}>
+            <Input
+              placeholder="搜索企业名称/编码/联系人/手机号"
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={12} sm={5}>
+            <Select
+              placeholder="状态筛选"
+              value={filterStatus || undefined}
+              onChange={v => setFilterStatus(v || '')}
+              allowClear
+              style={{ width: '100%' }}
+              options={[
+                { value: 'TRIAL', label: '试用中' },
+                { value: 'ACTIVE', label: '正式' },
+                { value: 'EXPIRED', label: '已到期' },
+                { value: 'SUSPENDED', label: '已暂停' },
+                { value: 'CLOSED', label: '已关闭' },
+              ]}
+            />
+          </Col>
+          <Col xs={12} sm={5}>
+            <Select
+              placeholder="套餐筛选"
+              value={filterPlan || undefined}
+              onChange={v => setFilterPlan(v || '')}
+              allowClear
+              style={{ width: '100%' }}
+              options={PLAN_OPTIONS}
+            />
+          </Col>
+          <Col xs={24} sm={6}>
+            <Button icon={<ClearOutlined />} onClick={handleResetFilters} disabled={!keyword && !filterStatus && !filterPlan}>
+              重置
+            </Button>
+            <Text style={{ marginLeft: 8, fontSize: 12, color: '#94a3b8' }}>
+              {(keyword || filterStatus || filterPlan) ? `筛选结果：${filteredData.length} 条` : ''}
+            </Text>
+          </Col>
+        </Row>
+      </div>
+
       <Table
-        dataSource={data}
+        dataSource={filteredData}
         columns={columns}
         rowKey="id"
         loading={loading}
         pagination={{ current: page, total, pageSize: 20, onChange: fetchData }}
         size="middle"
-        scroll={{ x: 1600 }}
+        scroll={{ x: 1000 }}
       />
 
+      {/* 详情 Drawer */}
+      <Drawer
+        title={drawerTenant ? `${drawerTenant.name || drawerTenant.tenantCode} — 租户详情` : '租户详情'}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerTenant(null); }}
+        width={560}
+        destroyOnHidden
+      >
+        {drawerTenant && renderDrawerContent(drawerTenant)}
+      </Drawer>
+
+      {/* 创建租户 Modal */}
       <Modal
         title={createResult ? '租户创建成功' : '创建租户'}
         open={createOpen}
-        onCancel={() => { setCreateOpen(false); setCreateResult(null); }}
+        onCancel={handleCreateCancel}
         footer={createResult ? [
-          <Button key="close" onClick={() => { setCreateOpen(false); setCreateResult(null); }}>关闭</Button>,
-        ] : undefined}
-        onOk={createResult ? undefined : handleCreate}
+          <Button key="close" onClick={handleCreateCancel}>关闭</Button>,
+        ] : [
+          <Button key="cancel" onClick={handleCreateCancel}>取消</Button>,
+          <Button key="ok" type="primary" onClick={handleCreate}>创建</Button>,
+        ]}
         destroyOnHidden
       >
         {createResult ? (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="租户编码"><code>{createResult.tenantCode}</code></Descriptions.Item>
-            <Descriptions.Item label="管理员用户名"><code>{createResult.adminUsername}</code></Descriptions.Item>
-            <Descriptions.Item label="管理员密码"><code>{createResult.adminPassword}</code></Descriptions.Item>
-          </Descriptions>
+          <div>
+            <Alert
+              type="success"
+              message="租户创建成功"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="租户编码">
+                <code style={{ fontSize: 14, fontWeight: 600 }}>{createResult.tenantCode}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="管理员用户名">
+                <code>{createResult.adminUsername}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="管理员密码">
+                <code>{createResult.adminPassword}</code>
+              </Descriptions.Item>
+            </Descriptions>
+            <p style={{ marginTop: 12, color: '#64748b', fontSize: 13 }}>
+              请妥善保管密码，建议通知管理员首次登录后修改。
+            </p>
+          </div>
         ) : (
           <Form form={form} layout="vertical">
             <Form.Item name="name" label="企业名称" rules={[{ required: true, message: '请输入企业名称' }]}>
@@ -313,6 +546,14 @@ const PlatformTenantsPage: React.FC = () => {
             </Form.Item>
             <Form.Item name="contactPhone" label="联系电话">
               <Input placeholder="联系电话" />
+            </Form.Item>
+            <Form.Item label="套餐选择">
+              <Select
+                value={createPlan}
+                onChange={v => setCreatePlan(v)}
+                options={PLAN_OPTIONS}
+                style={{ width: '100%' }}
+              />
             </Form.Item>
           </Form>
         )}
