@@ -43,12 +43,32 @@ export interface UpdateTenantRequest {
   maxAiDailyCalls?: number;
 }
 
+export interface CreateTenantResult {
+  tenantId: number;
+  tenantCode: string;
+  tenantName: string;
+  adminUsername: string;
+  initialPassword: string;
+  planCode: string;
+  planName: string;
+  status: string;
+  trialEndAt: string | null;
+  expiredAt: string | null;
+}
+
+export interface ResetPasswordResult {
+  tenantId: number;
+  tenantCode: string;
+  adminUsername: string;
+  newPassword: string;
+}
+
 /** 租户列表（分页） */
 export const listTenants = (params: { page?: number; size?: number }): Promise<{ total: number; page: number; size: number; records: PlatformTenant[] }> =>
   http.get('/api/platform/tenants', { params });
 
 /** 创建租户 */
-export const createTenant = (data: CreateTenantRequest): Promise<{ tenant: PlatformTenant; adminUsername: string; adminPassword: string }> =>
+export const createTenant = (data: CreateTenantRequest): Promise<CreateTenantResult> =>
   http.post('/api/platform/tenants', data);
 
 /** 租户详情 */
@@ -92,5 +112,5 @@ export const disableTenant = (id: number): Promise<void> =>
   http.post(`/api/platform/tenants/${id}/disable`);
 
 /** 重置管理员密码 */
-export const resetAdminPassword = (id: number): Promise<{ newPassword: string }> =>
+export const resetAdminPassword = (id: number): Promise<ResetPasswordResult> =>
   http.post(`/api/platform/tenants/${id}/reset-admin-password`);

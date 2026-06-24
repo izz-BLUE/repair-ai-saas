@@ -265,8 +265,9 @@ public class SysUserService {
 
     /**
      * 重置租户 ADMIN 密码（平台管理专用）
+     * @return 管理员用户名
      */
-    public void resetAdminPassword(Long tenantId, String newPassword) {
+    public String resetAdminPassword(Long tenantId, String newPassword) {
         SysUser admin = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getTenantId, tenantId)
@@ -279,6 +280,7 @@ public class SysUserService {
         }
         admin.setPassword(passwordEncoder.encode(newPassword));
         sysUserMapper.updateById(admin);
+        return admin.getUsername();
     }
 
     // ---------- 认证专用：查活跃用户 ----------

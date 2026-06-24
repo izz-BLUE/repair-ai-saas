@@ -51,7 +51,7 @@ public class PlatformTenantController {
      * 创建租户（自动生成 tenantCode + ADMIN 账号，随机密码）
      */
     @PostMapping
-    public ApiResponse<Map<String, Object>> createTenant(
+    public ApiResponse<CreateTenantResponse> createTenant(
             @Valid @RequestBody CreateTenantRequest req,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requirePlatformSuperAdmin(currentUser);
@@ -61,17 +61,25 @@ public class PlatformTenantController {
 
         // 2. 创建管理员账号（随机密码）
         String adminUsername = "admin";
-        String adminPassword = PasswordGenerator.generate(12);
-        var admin = sysUserService.createUser(
-                tenant.getId(), adminUsername, adminPassword,
+        String initialPassword = PasswordGenerator.generate(12);
+        sysUserService.createUser(
+                tenant.getId(), adminUsername, initialPassword,
                 req.contactName, req.contactPhone, null, "ADMIN"
         );
 
-        return ApiResponse.success(Map.of(
-                "tenant", tenant,
-                "adminUsername", adminUsername,
-                "adminPassword", adminPassword
-        ));
+        CreateTenantResponse resp = new CreateTenantResponse(
+                tenant.getId(),
+                tenant.getTenantCode(),
+                tenant.getName(),
+                adminUsername,
+                initialPassword,
+                tenant.getPlanCode(),
+                tenant.getPlanName(),
+                tenant.getStatus(),
+                tenant.getTrialEndAt(),
+                tenant.getExpiredAt()
+        );
+        return ApiResponse.success(resp);
     }
 
     /**
@@ -207,15 +215,24 @@ public class PlatformTenantController {
         return ApiResponse.success();
     }
 
-    /** 重置租户管理员密码（随机临时密码） */
+    /** 重置租户管理员密码（随机临时密码，仅本次返回） */
     @PostMapping("/{id}/reset-admin-password")
-    public ApiResponse<Map<String, Object>> resetAdminPassword(
+    public ApiResponse<ResetPasswordResponse> resetAdminPassword(
             @PathVariable Long id,
             @CurrentUserInfo CurrentUser currentUser) {
         RoleChecker.requirePlatformSuperAdmin(currentUser);
+        Tenant tenant = tenantService.getById(id);
+        if (tenant == null) {
+            return ApiResponse.error("NOT_FOUND", "租户不存在");
+        }
         String newPassword = PasswordGenerator.generate(12);
-        sysUserService.resetAdminPassword(id, newPassword);
-        return ApiResponse.success(Map.of("newPassword", newPassword));
+        String adminUsername = sysUserService.resetAdminPassword(id, newPassword);
+        return ApiResponse.success(new ResetPasswordResponse(
+                tenant.getId(),
+                tenant.getTenantCode(),
+                adminUsername,
+                newPassword
+        ));
     }
 
     // ==================== 工具方法 ====================
@@ -239,6 +256,34 @@ public class PlatformTenantController {
             @NotBlank(message = "企业名称不能为空") @Size(max = 100) String name,
             String contactName,
             String contactPhone
+    ) {}
+
+    /**
+     * 创建租户响应 — 包含一次性交付信息。
+     * initialPassword 仅在本次响应中返回，不存明文、不入日志。
+     */
+    public record CreateTenantResponse(
+            Long tenantId,
+            String tenantCode,
+            String tenantName,
+            String adminUsername,
+            String initialPassword,
+            String planCode,
+            String planName,
+            String status,
+            LocalDateTime trialEndAt,
+            LocalDateTime expiredAt
+    ) {}
+
+    /**
+     * 重置管理员密码响应 — 包含一次性新密码。
+     * newPassword 仅在本次响应中返回，不存明文、不入日志。
+     */
+    public record ResetPasswordResponse(
+            Long tenantId,
+            String tenantCode,
+            String adminUsername,
+            String newPassword
     ) {}
 
     public record UpdateTenantRequest(
