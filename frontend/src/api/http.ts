@@ -8,12 +8,15 @@ export const setMessageApi = (api: MessageInstance) => {
   messageApi = api;
 };
 
-const showError = (msg: string) => {
+const showError = (msg: unknown) => {
+  const text = typeof msg === 'string' && msg.length > 0
+    ? msg
+    : '系统繁忙，请稍后重试';
   if (messageApi) {
-    messageApi.error(msg);
+    messageApi.error(text);
   } else {
     // fallback: 兜底用 console，避免白屏
-    console.error('[http]', msg);
+    console.error('[http]', text);
   }
 };
 
@@ -40,8 +43,9 @@ http.interceptors.response.use(
         return apiResponse.data;
       }
       // 业务错误
-      showError(apiResponse.message || '请求失败');
-      return Promise.reject(new Error(apiResponse.message));
+      const msg = apiResponse.message || '请求失败';
+      showError(msg);
+      return Promise.reject(new Error(typeof msg === 'string' ? msg : '请求失败'));
     }
     // 非标准响应直接返回
     return apiResponse;
@@ -61,11 +65,11 @@ http.interceptors.response.use(
       }
 
       // 登录 401 和已在登录页面上的 401：显示错误信息，不跳转
-      const msg = error.response?.data?.message || error.message || '网络错误';
-      showError(msg);
+      const msg401 = error.response?.data?.message || '用户名或密码错误';
+      showError(msg401);
       return Promise.reject(error);
     }
-    const msg = error.response?.data?.message || error.message || '网络错误';
+    const msg = error.response?.data?.message || error.message || '网络连接异常，请检查网络后重试';
     showError(msg);
     return Promise.reject(error);
   },

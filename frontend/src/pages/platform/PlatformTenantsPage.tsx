@@ -1,17 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Tag, Space, Modal, Form, Input, App, Popconfirm, Descriptions } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { listTenants, createTenant, enableTenant, disableTenant, resetAdminPassword, type PlatformTenant } from '../../api/platform';
+import {
+  Table, Button, Tag, Space, Modal, Form, Input, App, Popconfirm, Descriptions,
+  Dropdown,
+} from 'antd';
+import { PlusOutlined, ReloadOutlined, DownOutlined } from '@ant-design/icons';
+import {
+  listTenants, createTenant, resetAdminPassword,
+  activateTenant, suspendTenant, restoreTenant, closeTenant, applyPlan,
+  type PlatformTenant,
+} from '../../api/platform';
+
+const STATUS_MAP: Record<string, { color: string; label: string }> = {
+  TRIAL: { color: 'blue', label: '试用中' },
+  ACTIVE: { color: 'green', label: '正式' },
+  EXPIRED: { color: 'red', label: '已到期' },
+  SUSPENDED: { color: 'orange', label: '已暂停' },
+  CLOSED: { color: 'default', label: '已关闭' },
+};
+
+const PLAN_OPTIONS = [
+  { key: 'TRIAL', label: '试用版 (TRIAL)' },
+  { key: 'STARTER', label: '入门版 (STARTER)' },
+  { key: 'PRO', label: '专业版 (PRO)' },
+  { key: 'LEGACY', label: '历史版 (LEGACY)' },
+];
+
+function formatDate(d: string | null): string {
+  if (!d) return '-';
+  return d.slice(0, 19)?.replace('T', ' ') || d;
+}
+
+function formatDateShort(d: string | null): string {
+  if (!d) return '-';
+  return d.slice(0, 10);
+}
+
+function formatNullable(v: number | null): string {
+  if (v == null) return '不限';
+  return String(v);
+}
 
 const PlatformTenantsPage: React.FC = () => {
   const [data, setData] = useState<PlatformTenant[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createResult, setCreateResult] = useState<{ tenantCode: string; adminUsername: string; adminPassword: string } | null>(null);
   const [form] = Form.useForm();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
 
   const fetchData = async (p = 1) => {
     setLoading(true);
@@ -27,6 +65,19 @@ const PlatformTenantsPage: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const withAction = async (id: number, fn: () => Promise<void>, okMsg: string) => {
+    setActionLoading(id);
+    try {
+      await fn();
+      message.success(okMsg);
+      fetchData(page);
+    } catch {
+      // error already shown by http.ts
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
@@ -41,15 +92,47 @@ const PlatformTenantsPage: React.FC = () => {
     } catch { /* validation */ }
   };
 
-  const handleToggle = async (record: PlatformTenant) => {
-    if (record.status === 'ACTIVE') {
-      await disableTenant(record.id);
-      message.success('已禁用');
-    } else {
-      await enableTenant(record.id);
-      message.success('已启用');
-    }
-    fetchData(page);
+  const handleSuspend = (record: PlatformTenant) => {
+    modal.confirm({
+      title: '确认暂停该租户？',
+      content: '暂停后该租户将无法登录和使用业务功能。',
+      okText: '确认暂停',
+      okType: 'danger',
+      onOk: () => withAction(record.id, () => suspendTenant(record.id), '已暂停'),
+    });
+  };
+
+  const handleActivate = (record: PlatformTenant) => {
+    withAction(record.id, () => activateTenant(record.id), '已启用');
+  };
+
+  const handleRestore = (record: PlatformTenant) => {
+    modal.confirm({
+      title: '确认恢复该租户？',
+      content: '恢复后该租户将重新获得访问和使用权限。',
+      okText: '确认恢复',
+      onOk: () => withAction(record.id, () => restoreTenant(record.id), '已恢复'),
+    });
+  };
+
+  const handleClose = (record: PlatformTenant) => {
+    modal.confirm({
+      title: '确认关闭租户？',
+      content: '关闭后该租户将无法登录和使用任何功能，此操作不可随意恢复。如需恢复请联系开发人员。',
+      okText: '确认关闭',
+      okType: 'danger',
+      onOk: () => withAction(record.id, () => closeTenant(record.id), '已关闭'),
+    });
+  };
+
+  const handleApplyPlan = (record: PlatformTenant, planCode: string) => {
+    const planLabel = PLAN_OPTIONS.find(p => p.key === planCode)?.label || planCode;
+    modal.confirm({
+      title: '确认应用套餐？',
+      content: `应用「${planLabel}」将覆盖当前所有额度设置，确认继续？`,
+      okText: '确认应用',
+      onOk: () => withAction(record.id, () => applyPlan(record.id, planCode), '套餐已应用'),
+    });
   };
 
   const handleResetPwd = async (id: number) => {
@@ -61,32 +144,121 @@ const PlatformTenantsPage: React.FC = () => {
   };
 
   const columns = [
-    { title: '企业名称', dataIndex: 'name', key: 'name', render: (v: string) => v || '-' },
-    { title: '租户编码', dataIndex: 'tenantCode', key: 'tenantCode', render: (v: string) => <code>{v}</code> },
-    { title: '联系人', dataIndex: 'contactName', key: 'contactName', render: (v: string) => v || '-' },
-    { title: '电话', dataIndex: 'contactPhone', key: 'contactPhone', render: (v: string) => v || '-' },
+    { title: '企业名称', dataIndex: 'name', key: 'name', width: 140, render: (v: string) => v || '-' },
+    { title: '租户编码', dataIndex: 'tenantCode', key: 'tenantCode', width: 100, render: (v: string) => <code>{v}</code> },
+    { title: '联系人', dataIndex: 'contactName', key: 'contactName', width: 80, render: (v: string) => v || '-' },
+    { title: '电话', dataIndex: 'contactPhone', key: 'contactPhone', width: 110, render: (v: string) => v || '-' },
     {
-      title: '状态', dataIndex: 'status', key: 'status',
-      render: (v: string) => <Tag color={v === 'ACTIVE' ? 'green' : 'red'}>{v === 'ACTIVE' ? '正常' : '已禁用'}</Tag>,
+      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      render: (v: string) => {
+        const m = STATUS_MAP[v];
+        return m ? <Tag color={m.color}>{m.label}</Tag> : <Tag>{v || '-'}</Tag>;
+      },
     },
     {
-      title: '门户', dataIndex: 'portalEnabled', key: 'portalEnabled',
+      title: '套餐', dataIndex: 'planName', key: 'planName', width: 90,
+      render: (v: string, record: PlatformTenant) => {
+        const name = v || record.planCode;
+        return name ? <Tag color="purple">{name}</Tag> : '-';
+      },
+    },
+    {
+      title: '试用到期', dataIndex: 'trialEndAt', key: 'trialEndAt', width: 100,
+      render: (v: string, record: PlatformTenant) =>
+        record.status === 'TRIAL' && v ? formatDateShort(v) : '-',
+    },
+    {
+      title: '到期时间', dataIndex: 'expiredAt', key: 'expiredAt', width: 100,
+      render: (v: string) => v ? formatDateShort(v) : '-',
+    },
+    {
+      title: '门户', dataIndex: 'portalEnabled', key: 'portalEnabled', width: 70,
       render: (v: boolean) => v ? <Tag color="blue">已启用</Tag> : <Tag>已关闭</Tag>,
     },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', render: (v: string) => v?.slice(0, 19)?.replace('T', ' ') || '-' },
     {
-      title: '操作', key: 'action',
-      render: (_: unknown, record: PlatformTenant) => (
-        <Space size="small">
-          <Button size="small" type={record.status === 'ACTIVE' ? 'default' : 'primary'} danger={record.status === 'ACTIVE'}
-            onClick={() => handleToggle(record)}>
-            {record.status === 'ACTIVE' ? '禁用' : '启用'}
-          </Button>
-          <Popconfirm title="确认重置该租户管理员密码？" onConfirm={() => handleResetPwd(record.id)}>
-            <Button size="small">重置密码</Button>
-          </Popconfirm>
-        </Space>
-      ),
+      title: '员工', dataIndex: 'maxUsers', key: 'maxUsers', width: 60,
+      render: (v: number | null) => formatNullable(v),
+    },
+    {
+      title: '师傅', dataIndex: 'maxTechnicians', key: 'maxTechnicians', width: 60,
+      render: (v: number | null) => formatNullable(v),
+    },
+    {
+      title: 'AI限额', dataIndex: 'maxAiDailyCalls', key: 'maxAiDailyCalls', width: 70,
+      render: (v: number | null) => formatNullable(v),
+    },
+    {
+      title: '月工单', dataIndex: 'ticketMonthlyLimit', key: 'ticketMonthlyLimit', width: 70,
+      render: (v: number | null) => formatNullable(v),
+    },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 140, render: (v: string) => formatDate(v) },
+    {
+      title: '操作', key: 'action', width: 280, fixed: 'right' as const,
+      render: (_: unknown, record: PlatformTenant) => {
+        const isLoading = actionLoading === record.id;
+        const isClosed = record.status === 'CLOSED';
+        const isSuspended = record.status === 'SUSPENDED';
+        const isExpired = record.status === 'EXPIRED';
+        const isActive = record.status === 'ACTIVE';
+
+        return (
+          <Space size="small" wrap>
+            {/* 启用/暂停 */}
+            {!isClosed && (
+              isActive ? (
+                <Button size="small" danger loading={isLoading}
+                  onClick={() => handleSuspend(record)}>
+                  暂停
+                </Button>
+              ) : (
+                <Button size="small" type="primary" loading={isLoading}
+                  onClick={() => handleActivate(record)}>
+                  启用
+                </Button>
+              )
+            )}
+
+            {/* 恢复 */}
+            {(isSuspended || isExpired) && (
+              <Button size="small" loading={isLoading}
+                onClick={() => handleRestore(record)}>
+                恢复
+              </Button>
+            )}
+
+            {/* 关闭 */}
+            {!isClosed && (
+              <Button size="small" danger loading={isLoading}
+                onClick={() => handleClose(record)}>
+                关闭
+              </Button>
+            )}
+
+            {/* 应用套餐 */}
+            {!isClosed && (
+              <Dropdown
+                menu={{
+                  items: PLAN_OPTIONS.map(p => ({
+                    key: p.key,
+                    label: p.label,
+                    onClick: () => handleApplyPlan(record, p.key),
+                  })),
+                }}
+                disabled={isLoading}
+              >
+                <Button size="small" loading={isLoading}>
+                  套餐 <DownOutlined />
+                </Button>
+              </Dropdown>
+            )}
+
+            {/* 重置密码 */}
+            <Popconfirm title="确认重置该租户管理员密码？" onConfirm={() => handleResetPwd(record.id)}>
+              <Button size="small" loading={isLoading}>重置密码</Button>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -112,6 +284,7 @@ const PlatformTenantsPage: React.FC = () => {
         loading={loading}
         pagination={{ current: page, total, pageSize: 20, onChange: fetchData }}
         size="middle"
+        scroll={{ x: 1600 }}
       />
 
       <Modal
